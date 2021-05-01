@@ -1,6 +1,11 @@
 ## reacher toy dataset
 
-### code
+### Dependencies
+- pybullet
+- urdfpy
+- numpy
+
+### Code
 <code>
 python main.py [-h] [--num_urdf NUM_URDF] [--min_link MIN_LINK] [--max_link MAX_LINK] [--max_vel MAX_VEL] [--num_iter NUM_ITER] [--save_idx SAVE_IDX] [--render RENDER]
 </code>
