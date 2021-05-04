@@ -1,12 +1,19 @@
-from tools.reacher_urdf_structure import get_structure
+import os
 import json
 
+from tools.reacher_urdf_structure import get_structure
+
+XML_DIR = './xml' #TODO
+
 class logger():
-    def __init__(self,path_idx=0):
+    def __init__(self, path_idx=0, str_only=False, num_joint=0):
+        """
+        path_idx: N, num_urdf
+        """
         self.memory=[]
         self.path_idx=path_idx
         self.dynamics=[]
-        self.save_structure()
+        self.save_structure(str_only, num_joint)
 
     def append_dynamics(self,state,command,dp):
         log={'state':state,'command':command,'dp':dp}
@@ -15,9 +22,14 @@ class logger():
     def save_dynamics(self,idx=0):
         self.memory[idx]['dynamics']=self.dynamics
     
-    def save_structure(self):
+    def save_structure(self, str_only, num_joint):
+        if str_only:
+            urdf_dir = os.path.join(XML_DIR, 'joint_{}'.format(num_joint))
+        else:
+            urdf_dir = XML_DIR
+
         for i in range(self.path_idx):
-            PATH='./xml/reacher_'+str(i)+'.urdf'
+            PATH = os.path.join(urdf_dir, 'reacher_'+str(i)+'.urdf')
             struct=get_structure(PATH)
             self.memory.append({'structure':struct})
 

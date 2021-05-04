@@ -11,8 +11,10 @@ class Reacher():
         self.pyscis=p.connect(self.RENDER)
         p.setGravity(0,0,-9.8)
         
-    def load(self,path_idx):
-        PATH='./xml/reacher_'+str(path_idx)+'.urdf'
+    def load(self, urdf_path):
+        # PATH='./xml/reacher_'+str(path_idx)+'.urdf' # Modified: receive urdf path explicitly (path_idx -> urdf_path)
+        PATH = urdf_path
+
         self.robot_id=p.loadURDF(PATH,useFixedBase=True) #0
         self.NumJoints = p.getNumJoints(self.robot_id) #3
         for i in range(self.NumJoints):
