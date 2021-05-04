@@ -33,9 +33,9 @@ def simulate_p(N, num_iter, max_vel=1, save_idx=0, render=True, str_only=False):
         urdf_path = os.path.join(XML_DIR, 'reacher_'+str(idx)+'.urdf')
         reacher.load(urdf_path)
 
-        MAX_RAGNE=int(num_iter)
+        MAX_RANGE=int(num_iter)
         Logger.dynamics=[]
-        for _ in range(MAX_RAGNE):
+        for _ in range(MAX_RANGE):
             command=[]
             for i in range(reacher.NumJoints-1):
                 command.append(max_vel* (random.random()-0.5))
