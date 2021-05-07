@@ -26,6 +26,6 @@ def get_matrix(PATH=None):
 
 def get_structure(PATH):
     adj,link_info=get_matrix(PATH)
-    structure = {'adj':adj,'ink_info':link_info}
+    structure = {'adj':adj,'link_info':link_info}
     return structure
 
