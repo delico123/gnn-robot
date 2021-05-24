@@ -1,5 +1,6 @@
-import random
-import logging
+# import random
+# import logging
+# from numpy import int
 
 import torch
 import torch.nn as nn
@@ -165,11 +166,21 @@ class TreeConv(MessagePassing): # TODO: Generalize
 
 
 
-def build_rstruc_model(args):
-    struc_tree_encoder = StrucTreeEncoder()
-    struc_tree_decoder = StrucTreeDecoder()
+def build_rstruc_model(args, sweep_config=None):
+    if args.rs_sweep:
+        config = sweep_config
+    else:
+        config = {
+            'learning_rate': args.rs_lr,
+            'latent_size': args.rs_latent
+        }
+
+    struc_tree_encoder = StrucTreeEncoder(latent=config.latent_size,
+                                          out_=config.latent_size)
+    struc_tree_decoder = StrucTreeDecoder(in_=config.latent_size,
+                                          latent=config.latent_size)
 
     net = STAE(encoder=struc_tree_encoder,
                decoder=struc_tree_decoder)
 
-    return net
+    return net, config

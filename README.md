@@ -4,5 +4,6 @@
 
 - PyTorch
 - PyBullet
+- W&B
 
 Specific version: TBD

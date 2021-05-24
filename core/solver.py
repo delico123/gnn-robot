@@ -2,6 +2,7 @@ import logging
 
 import torch
 import torch.nn as nn
+import wandb
 
 from core.model import build_rstruc_model
 from core.optimizer import get_optimizer
@@ -16,7 +17,25 @@ class Solver(nn.Module):
         self.args = args
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
-        self.net = build_rstruc_model(args)
+        # W&B Sweep
+        if args.rs_sweep:
+            config_defaults = {
+                'learning_rate': 0.1,
+                'latent_size': 4
+            }
+
+            # Init each wandb run
+            wandb.init(config=config_defaults)
+
+            # Define config
+            config = wandb.config
+
+            self.net, config = build_rstruc_model(args, config)
+        
+        else: 
+            self.net, _ = build_rstruc_model(args)
+        
+        # Optimizer
         self.optimizer = get_optimizer(args, self.net)
 
         self.to(self.device)
@@ -43,6 +62,10 @@ class Solver(nn.Module):
 
                 loss.backward()
                 optimizer.step()
+
+
+            if args.rs_sweep:
+                wandb.log({"loss": total_loss/len(data_loader)})
 
             if epoch % 10 == 0:
                 logging.info(f"Epoch {epoch}: , Loss: {total_loss/len(data_loader)}")
