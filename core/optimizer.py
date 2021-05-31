@@ -1,7 +1,8 @@
 import torch
 
 
-def get_optimizer(args, net):
+def get_optimizer(learning_rate, net):
     # TODO: argument(select optimizer)
     return torch.optim.Adam(params=net.parameters(),
-                            lr=args.rs_lr)
+                            lr=learning_rate,
+                            weight_decay=1e-4)
