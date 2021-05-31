@@ -7,7 +7,7 @@ from tools.save_logger import logger
 
 XML_DIR = './xml' # TODO
 
-def simulate_p(N, num_iter, max_vel=1, save_idx=0, render=True, str_only=False):
+def simulate_p(N, num_iter, max_vel=1, save_idx=0, render=True, str_only=False, min_joint=2, max_joint=3):
     """
     N: num_urdf
     """
@@ -16,7 +16,12 @@ def simulate_p(N, num_iter, max_vel=1, save_idx=0, render=True, str_only=False):
         """ Save structure only, no simulation """
         joint_dirs = [item for item in os.listdir(XML_DIR) if os.path.isdir(os.path.join(XML_DIR, item))]
         for joint_dir in joint_dirs:
+            # get number of joint
             num_joint = int(joint_dir[6:]) # type int for sanity check
+            
+            if num_joint > max_joint or num_joint < min_joint:
+                continue
+
             Logger = logger(N, str_only, num_joint)
 
             Logger.save_json(f'{save_idx}-structure_only-j_{num_joint}')
