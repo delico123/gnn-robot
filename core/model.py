@@ -1,5 +1,5 @@
 # import random
-# import logging
+import logging
 # from numpy import int
 
 import torch
@@ -34,14 +34,15 @@ class STAE(nn.Module):
         """ Structure recontruction loss
             - MSE Loss from node features
         """
-        criterion = nn.MSELoss()
-        
+        # criterion = nn.MSELoss()
+        criterion = nn.L1Loss()
+
         loss = criterion(predict, target)
 
         return loss
 
 
-class StrucTreeEncoder(nn.Module):
+class StrucTreeEncoder(nn.Module): # N/A
     def __init__(self, in_=2, latent=16, out_=16, conv='tree'):
         super(StrucTreeEncoder, self).__init__()
         # conv = GCNConv if conv == 'gcn' else TreeConv
@@ -90,58 +91,30 @@ class StrucTreeEncoder(nn.Module):
 
 
 class StrucTreeDecoder(nn.Module):
-    def __init__(self, in_=16, latent=16, out_=2, conv='tree'):
+    def __init__(self, in_=16, latent=16, out_=2):
         # out_: number of features for each node
         super(StrucTreeDecoder, self).__init__()
 
-        # conv = GCNConv if conv == 'gcn' else TreeConv
-        # self.conv1 = conv(in_, latent, cached=True)
-        # self.conv2 = conv(latent, out_, cached=True)
-        
         """
         in_: int
-            len(data.x)
+            len(z)
         """
-        self.conv_spread = TreeConv(in_, latent)
-        # self.conv_spread = GCNConv(in_, latent)
-        # self.conv_collect = GCNConv(latent, out_)
-        self.conv_collect = TreeConv(latent, latent)
-        self.decode_fc = nn.Linear(latent, out_)
+        self.tree_decoder = TreeConv(in_, latent, latent)
+        self.readout = nn.Linear(latent, out_)
 
-        self.latent = latent
-        self.out_ = out_
-
-    def forward(self, z, num_node, edge_index):
-        # logging.info("Decoding..")
+    def forward(self, z, node_max, num_node, edge_index):
+        # logging.debug("Decoding..")
 
         # init each node feat w/ z
-        x = z.repeat(num_node, 1)
+        x = z.repeat(node_max, 1)
 
-        # SPREAD
-        for ii, _ in enumerate(x):
-            if ii + 1 == len(x): # last item
-                continue # or break
-            next_edge_index = torch.tensor([[ii], [ii+1]]) # TODO generalize (thru data util?)
-            x = self.conv_spread(x, next_edge_index)
+        # Decoder part 1: message passing tree
+        x = self.tree_decoder(x, edge_index, num_node)
         
-        # COLLECT
-        pad = nn.ConstantPad1d((0, self.latent - self.out_), 0)
-        for ii, _ in enumerate(reversed(x)):
-            if ii == 0: # last item (0 -> -1)
-                continue # or break
-            next_edge_index = torch.tensor([[ii], [ii-1]]) # TODO generalize
-            x = self.conv_collect(x, next_edge_index)
-            # x_i = self.conv_collect(x, next_edge_index)
-            # print("!@#!@#")
-            # print(ii)
-            # print(x_i)
-            # x[ii] = pad(x_i[ii])
-        
-        # PREDICT
-        # 각 state을 한 linear에 통과하는 것 반복-> 예측하도록
+        # Decoder part 2: linear, predict.
         output = torch.tensor([])
         for ii, x_i in enumerate(x):
-            d_i = self.decode_fc(x_i)
+            d_i = self.readout(x_i)
             output = torch.cat([output, d_i.unsqueeze(0)], dim=0)
 
         return output
@@ -149,36 +122,138 @@ class StrucTreeDecoder(nn.Module):
 
 """Conv"""
 class TreeConv(MessagePassing): # TODO: Generalize
-    def __init__(self, in_=2, out_=16):
+    def __init__(self, in_=2, out_=16, latent=16):
         """
-        hidden size = out_channel * 2
+        in_
+        out_
+        direction: up or down (down==spread==root->leaf, up==collect==l->r)
         """
         super(TreeConv, self).__init__(aggr='add')
-        self.lin1 = nn.Linear(in_, out_*2)
-        self.lin2 = nn.Linear(out_*2, out_)
-        # message 만들때 relu가는걸로
+        self.lin_root = nn.Linear(in_, latent)
+        self.mlp_down = nn.Sequential(nn.Linear(2*latent, latent),
+                                      nn.ReLU())
+        # self.mlp_up = nn.Sequential(nn.Linear(2*latent, latent),
+        self.mlp_up = nn.Sequential(nn.Linear(2*latent, out_),
+                                    nn.ReLU())
 
-    def forward(self, x, edge_index):
-        x = self.lin1(x)
-        x = x.relu()
-        x = self.lin2(x)
-        return self.propagate(edge_index, x=x)
+    def _organize_edges(self, edge_index, num_node):
+        # TODO: generalize to tree (mltr), use edge_index, remove num_node
+        # direction[step[ins[], outs[]]]
+        
+        prt = range(0, num_node-1)
+        chd = range(1, num_node)
+
+        down_ei = torch.tensor([[[p],[c]] for p, c in zip(prt, chd)])
+        up_ei = down_ei.flip([0,1])
+
+        return down_ei, up_ei
+
+    def forward(self, x, edge_index, num_node=8):
+        # Edges
+        down_ei, up_ei = self._organize_edges(edge_index, num_node)
+
+        # Node vectors
+        x = self.lin_root(x)
+        # x = x.relu()
+
+        # SPREAD
+        x = self.propagate_down(down_ei, x)
+
+        # COLLECT
+        x = self.propagate_up(up_ei, x)
+
+        return x
+
+    def propagate_down(self, down_ei, x):
+        for edges in down_ei:
+            x = self.propagate(edge_index=edges, x=x, mlp=self.mlp_down)
+        return x
+
+    def propagate_up(self, up_ei, x):
+        for edges in up_ei:
+            x = self.propagate(edge_index=edges, x=x, mlp=self.mlp_up)
+        return x        
+
+    def message(self, x_i, x_j, mlp):
+        m = torch.cat([x_i, x_j], dim=1)
+        m = mlp(m)
+        return m
+
+""" For debugging """
+class ConcatEncoder(nn.Module):
+    def __init__(self, in_=2, latent=16, out_=16):
+        super(ConcatEncoder, self).__init__()
+        
+        """
+        in_: int
+            len(data.x)
+        """
+
+        self.in_ = in_
+        self.latent = latent
+        self.out_ = out_
+
+    def forward(self, x, num_node, edge_index):
+
+        return torch.flatten(x)
 
 
+class SimpleDecoder(nn.Module):
+    def __init__(self, in_=16, latent=16, out_=16):
+        super(SimpleDecoder, self).__init__()
+        
+        """
+        in_: int
+            len(data.x)
+        """
 
-def build_rstruc_model(args, sweep_config=None):
+        self.in_ = in_
+        self.latent = latent
+        self.out_ = out_
+
+        self.lin1 = nn.Linear(in_, latent)
+        self.lin2 = nn.Linear(latent, out_)
+
+    def forward(self, z, num_node, edge_index):
+        d = self.lin1(z)
+        d = d.relu()
+        d = self.lin2(d)
+
+        d = torch.reshape(d, (-1,2))
+
+        return d
+""""""
+
+def build_rstruc_model(args, sweep_config=None): #TODO: wandb not sweep
+    logging.info("build model..")
     if args.rs_sweep:
-        config = sweep_config
+        config = dict(sweep_config)
     else:
         config = {
             'learning_rate': args.rs_lr,
             'latent_size': args.rs_latent
         }
 
-    struc_tree_encoder = StrucTreeEncoder(latent=config.latent_size,
-                                          out_=config.latent_size)
-    struc_tree_decoder = StrucTreeDecoder(in_=config.latent_size,
-                                          latent=config.latent_size)
+    latent_size = config['latent_size']
+
+    if args.rs_conv == "tree":
+        struc_tree_encoder = StrucTreeEncoder(latent=latent_size,
+                                            out_=latent_size)
+        struc_tree_decoder = StrucTreeDecoder(in_=latent_size,
+                                            latent=latent_size)
+    elif args.rs_conv == "test_decoder":
+        struc_tree_encoder = ConcatEncoder()
+        struc_tree_decoder = StrucTreeDecoder(latent=16)
+
+    elif args.rs_conv == "test_simple_decoder":
+        struc_tree_encoder = ConcatEncoder()
+        struc_tree_decoder = SimpleDecoder(in_=16,
+                                        latent=latent_size)
+    
+    else:
+        print(args.rs_conv)
+        raise NotImplementedError
+    
 
     net = STAE(encoder=struc_tree_encoder,
                decoder=struc_tree_decoder)
