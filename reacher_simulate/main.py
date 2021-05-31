@@ -25,7 +25,7 @@ for i in range(args.num_urdf):
 print('made urdf file')
 
 print('run simulation')
-simulate_p(args.num_urdf,args.num_iter,args.max_vel,args.save_idx,args.render, args.str_only)
+simulate_p(args.num_urdf,args.num_iter,args.max_vel,args.save_idx,args.render, args.str_only, args.min_njoint, args.max_njoint)
 
 print('finished!')
 
