@@ -19,17 +19,24 @@ TODO:
 
 """
 
-def get_structure_loader(task='Reacher', batch_size=16):
+def get_structure_loader(task='Reacher', batch_size=16, node_padding=8, data_simple=False):
     logging.info("Reacher")
 
     if task is 'Reacher':
         data_path = 'reacher_simulate/res'
     else:
         raise NotImplementedError
+
+    if data_simple:
+        data_path = os.path.join(data_path, 'debug')
+        
     data_file_names = [x for x in os.listdir(data_path) if _is_str_only(x)]
     data_file_names.sort()
     
-    dataset = _to_dataset(data_path, data_file_names, node_zero_padding=True, node_max=8)
+    dataset = _to_dataset(data_path, 
+                          data_file_names, 
+                          node_zero_padding=True if node_padding>0 else False, 
+                          node_max=node_padding)
     # dataset = _to_dataset(data_path, data_file_names, node_zero_padding=False)
 
     return dataset
