@@ -92,6 +92,8 @@ if __name__ == '__main__':
     # W&B
     parser.add_argument('--wnb', action='store_true', default=False,
                         help='Turn on W&B')
+    parser.add_argument('--wnb_note', type=str, default=None,
+                        help='Run notes, saved in config')
 
     # log
     parser.add_argument('--log_per', type=int, default=10,

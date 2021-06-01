@@ -43,6 +43,9 @@ class Solver(nn.Module):
                             # project= # Project name. Default: gnn-robot
                             )
 
+                wandb.config.update({'data_simple':args.data_simple,  # True: joint3 only
+                                        'wnb_note':args.wnb_note})
+
                 # wandb magic
                 wandb.watch(self.net, log_freq=100)
             
@@ -69,8 +72,8 @@ class Solver(nn.Module):
                 # output = net.decode(z, data.y, data.edge_index)
                 output = net.decode(z, args.node_padding, data.y, data.edge_index) # for debug
 
-                # loss = net.recon_loss(predict=output[:data.y], target=data.x[:data.y])
-                loss = net.recon_loss(predict=output, target=data.x)
+                loss = net.recon_loss(predict=output[:data.y], target=data.x[:data.y])
+                # loss = net.recon_loss(predict=output, target=data.x)
                 total_loss += loss.item()
 
                 loss.backward()
