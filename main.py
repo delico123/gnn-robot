@@ -70,14 +70,16 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('--rs_epoch', type=int, default=200,
                         help='Recontruction task, structure, epoch.')
-    parser.add_argument('--rs_bs', type=int, default=16,
+    parser.add_argument('--rs_bs', type=int, default=1,
                         help='Recontruction task, structure, batch_size.')
-    parser.add_argument('--rs_lr', type=float, default=0.01,
+    parser.add_argument('--rs_lr', type=float, default=0.001,
                         help='Recontruction task, structure, learning_rate.')
     parser.add_argument('--rs_latent', type=int, default=16,
                         help='Recontruction task, structure, latent_size.')
     parser.add_argument('--rs_conv', type=str, default='gcn',
-                        choices=['gcn','tree','test_decoder','test_simple_decoder','test_encoder'],
+                        choices=['gcn','tree',
+                                'test_decoder','test_simple_decoder',
+                                'tree_enc_simple_dec'],
                         help='Select conv')
     parser.add_argument('--rs_sweep', action='store_true', default=False,
                         help='Enable W&B hyperparam sweep')
@@ -124,18 +126,18 @@ if __name__ == '__main__':
                 'learning_rate': {
                     'values': [0.1, 0.03]
                 },
-                'latent_size':{
+                'latent_size': {
                     'values': [4, 8]
-                },
+                }
             }
 
         else:
             param_dict = {
                 'learning_rate': {
-                    'values': [0.1, 0.03, 0.01, 0.001]
+                    'values': [0.03, 0.01, 0.001]
                 },
-                'latent_size':{
-                    'values': [4, 8, 16, 32]
+                'latent_size': {
+                    'values': [4, 8, 16, 64, 256]
                 },
                 # 'optimizer': {
                 #     'values': ['adam', 'sgd']
