@@ -1,5 +1,6 @@
+#utils.py **not used**
+
 #TODO: data util 옮기기
-#curr: not used
 
 node_mltr = []
 childs = [
