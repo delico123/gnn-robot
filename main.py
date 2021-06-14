@@ -27,7 +27,6 @@ def main(args):
                                                      node_padding=args.node_padding,
                                                      data_simple=args.data_simple
                                                      )
-
         # Train
         solver.train_rstruc(structure_data_loader)
 
@@ -72,6 +71,10 @@ if __name__ == '__main__':
                         help='Recontruction task, structure, epoch.')
     parser.add_argument('--rs_bs', type=int, default=1,
                         help='Recontruction task, structure, batch_size.')
+    parser.add_argument('--opt', type=str, default='adam',
+                        choices=['adam', 'sgd'],
+                        help='Optimizer')
+    
     parser.add_argument('--rs_lr', type=float, default=0.001,
                         help='Recontruction task, structure, learning_rate.')
     parser.add_argument('--rs_latent', type=int, default=16,
@@ -120,27 +123,34 @@ if __name__ == '__main__':
         if args.wnb:
             logging.warning("W&B Sweep turned on, regular W&B igonored.")
             
+        # Short sweep
         if args.rs_sweep_short:
             logging.info("SHORT SWEEP")
             param_dict = {
                 'learning_rate': {
                     'values': [0.1, 0.03]
                 },
-                'latent_size': {
-                    'values': [4, 8]
+                # 'latent_size': {
+                #     'values': [4, 8]
+                # },
+                'optimizer': {
+                    'distribution': 'categorical',
+                    'values': ['adam', 'sgd']
                 }
             }
-
+        
+        # Full sweep
         else:
             param_dict = {
                 'learning_rate': {
-                    'values': [0.03, 0.01, 0.001]
+                    'values': [0.03, 0.01, 0.001, 0.0001]
                 },
                 'latent_size': {
-                    'values': [4, 8, 16, 64, 256]
+                    'values': [4, 8, 16, 64, 256, 512]
                 },
                 # 'optimizer': {
-                #     'values': ['adam', 'sgd']
+                    # 'distribution': 'categorical',
+                    # 'values': ['adam', 'sgd']
                 # }
             }
 

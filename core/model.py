@@ -150,7 +150,6 @@ class TreeConv(MessagePassing): # TODO: Generalize
     def forward(self, x, edge_index, num_node=8):
         # Edges
         down_ei, up_ei = self._organize_edges(edge_index, num_node)
-       
         # Node vectors
         # x = self.lin_root(x) ###
         # x = x.relu()
@@ -247,6 +246,7 @@ def build_rstruc_model(args, sweep_config=None):
         config = dict(sweep_config)
     else:
         config = {
+            'optimizer': args.opt,
             'learning_rate': args.rs_lr,
             'latent_size': args.rs_latent
         }

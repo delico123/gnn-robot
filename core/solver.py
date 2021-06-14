@@ -20,6 +20,7 @@ class Solver(nn.Module):
         # W&B Sweep for rs
         if args.rs_sweep:
             config_defaults = {
+                'optimizer': args.opt,
                 'learning_rate': args.rs_lr,
                 'latent_size': args.rs_latent
             }
@@ -50,7 +51,7 @@ class Solver(nn.Module):
                 wandb.watch(self.net, log_freq=100)
             
         # Optimizer
-        self.optimizer = get_optimizer(config['learning_rate'], self.net)
+        self.optimizer = get_optimizer(config, self.net)
 
         self.to(self.device)
 
