@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
 
     # W&B hyperparam sweep
-    if args.rs_sweep:
+    if args.rs_sweep or args.rs_sweep_short:
         logging.info("W&B SWEEP")
         if args.wnb:
             logging.warning("W&B Sweep turned on, regular W&B igonored.")
