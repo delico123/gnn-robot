@@ -39,10 +39,10 @@ def get_structure_loader(task='Reacher', batch_size=16, node_padding=8, data_sim
                           node_max=node_padding)
     # dataset = _to_dataset(data_path, data_file_names, node_zero_padding=False)
 
-    return dataset
-    # return DataLoader(dataset=dataset, 
-    #                   batch_size=batch_size,
-    #                   shuffle=True)
+    # return dataset
+    return DataLoader(dataset=dataset, 
+                      batch_size=batch_size,
+                      shuffle=True)
 
 
 def _is_str_only(name):

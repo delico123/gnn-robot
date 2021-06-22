@@ -22,7 +22,8 @@ class Solver(nn.Module):
             config_defaults = {
                 'optimizer': args.opt,
                 'learning_rate': args.rs_lr,
-                'latent_size': args.rs_latent
+                'latent_size': args.rs_latent,
+                'opt_epsilon': args.opt_eps
             }
             # Init each wandb run
             wandb.init(config=config_defaults)
@@ -66,6 +67,8 @@ class Solver(nn.Module):
             net.train()
 
             total_loss = 0
+            total_loss_cls = 0
+            total_loss_rgr = 0
             for ii, data in enumerate(data_loader):
                 optimizer.zero_grad()
 
@@ -73,17 +76,33 @@ class Solver(nn.Module):
                 # output = net.decode(z, data.y, data.edge_index)
                 output = net.decode(z, args.node_padding, data.y, data.edge_index) # for debug
 
-                loss = net.recon_loss(predict=output[:data.y], target=data.x[:data.y])
-                # loss = net.recon_loss(predict=output, target=data.x)
+                # loss_tmp = net.recon_loss(predict=data.x[:data.y], target=data.x[:data.y])
+                
+                loss_cls = net.recon_loss_cls(predict=output[:1][:data.y], target=data.x[:1][:data.y])
+                loss_rgr = net.recon_loss_rgr(predict=output[1:][:data.y], target=data.x[1:][:data.y])
+                
+                if args.rs_loss_single:
+                    loss = net.recon_loss(predict=output[:data.y], target=data.x[:data.y]) # Case: loss single, node only
+                    # loss = net.recon_loss(predict=output, target=data.x) # Case: loss single, node all
+                else:
+                    loss = loss_cls + loss_rgr # Case: loss separated (multitask learning)
+
+                # total_loss += loss_tmp.item()
                 total_loss += loss.item()
+                total_loss_cls += loss_cls.item()
+                total_loss_rgr += loss_rgr.item()
 
                 loss.backward()
                 optimizer.step()
 
 
             if args.rs_sweep or args.wnb:
-                wandb.log({"loss": total_loss/len(data_loader)})
+                wandb.log({"loss": total_loss/len(data_loader),
+                            "loss_cls": total_loss_cls/len(data_loader),
+                            "loss_rgr": total_loss_rgr/len(data_loader)
+                })
 
             if epoch % args.log_per == 0:
                 logging.info(f"Epoch: {epoch}, Loss: {total_loss/len(data_loader)}")
-                logging.debug(f"Z: {z}, O: {output}, T:{data.x}")
+                logging.info(f"Z: {z}, O: {output}, T:{data.x}")
+

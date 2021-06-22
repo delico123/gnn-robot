@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch_geometric.nn import GCNConv, MessagePassing
-from torch_geometric.nn.inits import reset
+from torch_geometric.nn.inits import reset, uniform
 
 # temp
 from torch import Tensor
@@ -46,6 +46,28 @@ class STAE(nn.Module):
 
         return loss
 
+    def recon_loss_cls(self, predict, target):
+        """ Structure recontruction loss (Classification)
+        - BCE for end-effector prediction
+        """
+        # loss binary
+        criterion = nn.BCEWithLogitsLoss()
+
+        loss = criterion(predict, target)
+
+        return loss
+
+    def recon_loss_rgr(self, predict, target):
+        """ Structure recontruction loss (Regression)
+        - L1
+        """
+        # loss binary
+        criterion = nn.L1Loss()
+        
+        loss = criterion(predict, target)
+
+        return loss
+
 
 class StrucTreeEncoder(nn.Module): # N/A
     def __init__(self, in_=2, latent=16, out_=16, conv='tree'):
@@ -75,6 +97,8 @@ class StrucTreeDecoder(nn.Module):
         """
         self.tree_decoder = TreeConv(in_, latent, latent)
         self.readout = nn.Linear(latent, out_)
+        # self.readout_sig = nn.Linear(latent, out_)
+        # self.readout_lin = nn.Linear(latent, out_)
 
     def forward(self, z, node_max, num_node, edge_index):
         # logging.debug("Decoding..")
@@ -95,6 +119,10 @@ class StrucTreeDecoder(nn.Module):
 
 
 """Conv"""
+
+# uniform(size, tensor):
+#     bound = 1.0 / math.sqrt(size)
+#     tensor.data.uniform_(-bound, bound)
 class TreeConv(MessagePassing): # TODO: Generalize
     def __init__(self, in_=2, out_=16, latent=16, loc_msg=False):
         """
@@ -167,6 +195,10 @@ class TreeConv(MessagePassing): # TODO: Generalize
     def propagate_oneway(self, edge_indices, x, fn_m, fn_u):
         """ x -> h
         """
+        # Handling x: (Currently, v3)
+        # v1) Zero padding, 
+        # v2) Separate linear layer, 
+        # v3) Message zero w/ update fn
         # 0에 있는 node에 대해 update 먼저 진행. msg는 0으로. (OR, use separate fn)
         m_e = self.empty_msg.repeat(x.shape[0], 1)
         h = torch.cat([x, m_e], dim=1)
@@ -248,7 +280,8 @@ def build_rstruc_model(args, sweep_config=None):
         config = {
             'optimizer': args.opt,
             'learning_rate': args.rs_lr,
-            'latent_size': args.rs_latent
+            'latent_size': args.rs_latent,
+            'opt_epsilon': args.opt_eps
         }
 
     latent_size = config['latent_size']

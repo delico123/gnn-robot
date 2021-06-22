@@ -74,7 +74,8 @@ if __name__ == '__main__':
     parser.add_argument('--opt', type=str, default='adam',
                         choices=['adam', 'sgd'],
                         help='Optimizer')
-    
+    parser.add_argument('--opt_eps', type=float, default=1e-8,
+                        help='epsilon')
     parser.add_argument('--rs_lr', type=float, default=0.001,
                         help='Recontruction task, structure, learning_rate.')
     parser.add_argument('--rs_latent', type=int, default=16,
@@ -84,10 +85,19 @@ if __name__ == '__main__':
                                 'test_decoder','test_simple_decoder',
                                 'tree_enc_simple_dec'],
                         help='Select conv')
+    parser.add_argument('--rs_loss_single', action='store_true', default=False,
+                        help='Default (False): separated/multi-task loss')
     parser.add_argument('--rs_sweep', action='store_true', default=False,
                         help='Enable W&B hyperparam sweep')
     parser.add_argument('--rs_sweep_short', action='store_true', default=False,
                         help='Enable W&B hyperparam sweep, short')
+
+    # TEMP
+    parser.add_argument('--rs_dnorm', action='store_true', default=False,
+                        help='min 0.1, max0.4 norm')
+    parser.add_argument('--rs_rnn', action='store_true', default=False,
+                        help='GGNN-like update, rnn')
+    
 
 
     # parser.add_argument('--test_mode', action='store_true', default=False,
@@ -126,6 +136,8 @@ if __name__ == '__main__':
         # Short sweep
         if args.rs_sweep_short:
             logging.info("SHORT SWEEP")
+            args.rs_sweep = True
+
             param_dict = {
                 'learning_rate': {
                     'values': [0.1, 0.03]
@@ -143,21 +155,28 @@ if __name__ == '__main__':
         else:
             param_dict = {
                 'learning_rate': {
-                    'values': [0.03, 0.01, 0.001, 0.0001]
+                    # 'values': [0.03, 0.01, 0.001, 0.0001]
+                    'values': [0.0001]
                 },
                 'latent_size': {
-                    'values': [4, 8, 16, 64, 256, 512]
+                    'values': [4, 8]
+                    # 'values': [4, 8, 64]
+                    # 'values': [4, 8, 64, 1024]
                 },
                 # 'optimizer': {
                     # 'distribution': 'categorical',
                     # 'values': ['adam', 'sgd']
                 # }
+                'opt_epsilon': {
+                    # 'values': [1.0, 1e-1, 1e-3, 1e-8]
+                    'values': [1e-3, 1e-8]
+                }
             }
 
         sweep_config = {
             'name': args.rs_conv,
-            # 'method': 'random', #grid, random
             'method': 'grid', #grid, random
+            # 'method': 'random', #grid, random
             'metric': {
                 'name': 'loss',
                 'goal': 'minimize'   
@@ -169,7 +188,7 @@ if __name__ == '__main__':
                             #    project="rstruc-sweep"
                                )
         wandb.agent(sweep_id=sweep_id, function=lambda:main(args), entity="jtk")
-        # wandb.agent(sweep_id=sweep_id, function=lambda:main(args), entity="jtk", count=16)
+        # wandb.agent(sweep_id=sweep_id, function=lambda:main(args), entity="jtk", count=10) # limit max num run (for random sweep)
 
     else:
         main(args)
