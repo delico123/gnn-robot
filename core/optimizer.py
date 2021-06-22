@@ -8,10 +8,12 @@ def get_optimizer(config, net):
 
     opt = config['optimizer']
     learning_rate = config['learning_rate']
+    eps = config['opt_epsilon']
 
     if opt == 'adam':
         return torch.optim.Adam(params=net.parameters(),
                             lr=learning_rate,
+                            eps=eps,
                             weight_decay=1e-4)
     
     elif opt == 'sgd':
