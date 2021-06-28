@@ -27,13 +27,13 @@ class Reacher():
             #print(p.getJointState(self.robot_id,j))
             joint_state.append(p.getJointState(self.robot_id,j)[0])       
         for i in range(self.NumJoints-1):
-            p.setJointMotorControl2(self.robot_id,i,controlMode=p.VELOCITY_CONTROL,targetVelocity=a[i])
+            p.setJointMotorControl2(self.robot_id,i,controlMode=p.POSITION_CONTROL,targetPosition=a[i]+joint_state[i])
             p.stepSimulation()
         next_pos = p.getLinkState(self.robot_id,self.NumJoints-1)[0]
         dp=[0,0]
         for i in range(2):
             dp[i]=next_pos[i]-pos[i]
         #print(dp)
-        return joint_state,dp
+        return joint_state,dp,next_pos
     def close(self):
         p.resetSimulation()

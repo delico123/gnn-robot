@@ -22,45 +22,65 @@
   </link>
   <link name="link1">
     <inertial>
-      <origin xyz="0.14885062697980445 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.05112433701000446 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
       <mass value="1.0"/>
       <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
     </inertial>
     <visual>
       <geometry>
-        <cylinder radius="0.015" length="0.2977012539596089"/>
+        <cylinder radius="0.015" length="0.10224867402000892"/>
       </geometry>
       <material name="blue"/>
-      <origin xyz="0.14885062697980445 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.05112433701000446 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.015" length="0.2977012539596089"/>
+        <cylinder radius="0.015" length="0.10224867402000892"/>
       </geometry>
-      <origin xyz="0.14885062697980445 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.05112433701000446 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </collision>
   </link>
   <link name="link2">
     <inertial>
-      <origin xyz="0.09911636499228385 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.1604852504217507 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
       <mass value="1.0"/>
       <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
     </inertial>
     <visual>
       <geometry>
-        <cylinder radius="0.015" length="0.1982327299845677"/>
+        <cylinder radius="0.015" length="0.3209705008435014"/>
       </geometry>
       <material name="sky"/>
-      <origin xyz="0.09911636499228385 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.1604852504217507 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.015" length="0.1982327299845677"/>
+        <cylinder radius="0.015" length="0.3209705008435014"/>
       </geometry>
-      <origin xyz="0.09911636499228385 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.1604852504217507 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </collision>
   </link>
   <link name="link3">
+    <inertial>
+      <origin xyz="0.08397140405429906 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <cylinder radius="0.015" length="0.16794280810859813"/>
+      </geometry>
+      <material name="green"/>
+      <origin xyz="0.08397140405429906 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.015" length="0.16794280810859813"/>
+      </geometry>
+      <origin xyz="0.08397140405429906 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+    </collision>
+  </link>
+  <link name="link4">
     <inertial>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
       <mass value="1.0"/>
@@ -92,14 +112,21 @@
     <parent link="link1"/>
     <child link="link2"/>
     <axis xyz="0. 0. 1."/>
-    <origin xyz="0.2977012539596089 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+    <origin xyz="0.10224867402000892 0.0 0.0" rpy="0.0 -0.0 0.0"/>
   </joint>
   <joint name="joint3" type="revolute">
     <limit effort="300.0" velocity="200.0" lower="-2.96705" upper="2.96705"/>
     <parent link="link2"/>
     <child link="link3"/>
     <axis xyz="0. 0. 1."/>
-    <origin xyz="0.1982327299845677 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+    <origin xyz="0.3209705008435014 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+  </joint>
+  <joint name="joint4" type="revolute">
+    <limit effort="300.0" velocity="200.0" lower="-2.96705" upper="2.96705"/>
+    <parent link="link3"/>
+    <child link="link4"/>
+    <axis xyz="0. 0. 1."/>
+    <origin xyz="0.16794280810859813 0.0 0.0" rpy="0.0 -0.0 0.0"/>
   </joint>
   <material name="yellow">
     <color rgba="0.8 0.8 0.  1. "/>
@@ -109,6 +136,9 @@
   </material>
   <material name="sky">
     <color rgba="0.  0.8 0.8 1. "/>
+  </material>
+  <material name="green">
+    <color rgba="0.  0.8 0.  1. "/>
   </material>
   <material name="red">
     <color rgba="0.8 0.  0.  1. "/>

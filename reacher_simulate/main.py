@@ -9,7 +9,7 @@ parser.add_argument('--max_njoint', type=int, default=3, help='max number of joi
 parser.add_argument('--min_link', type=float, default=0.1, help='min length of each link')
 parser.add_argument('--max_link', type=float, default=0.4, help='max length of each link')
 
-parser.add_argument('--max_vel', type=float, default=1, help='max vel for ee')
+parser.add_argument('--max_pos', type=float, default=0.5, help='max pos for ee')
 parser.add_argument('--num_iter', type=int, default=1e5, help='number of simulation for each reacher')
 parser.add_argument('--save_idx', type=int, default=0, help='saved idx for dataset')
 
@@ -25,7 +25,7 @@ for i in range(args.num_urdf):
 print('made urdf file')
 
 print('run simulation')
-simulate_p(args.num_urdf,args.num_iter,args.max_vel,args.save_idx,args.render, args.str_only, args.min_njoint, args.max_njoint)
+simulate_p(args.num_urdf,args.num_iter,args.max_pos,args.save_idx,args.render, args.str_only, args.min_njoint, args.max_njoint)
 
 print('finished!')
 

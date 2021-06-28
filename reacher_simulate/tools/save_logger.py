@@ -15,8 +15,8 @@ class logger():
         self.dynamics=[]
         self.save_structure(str_only, num_joint)
 
-    def append_dynamics(self,state,command,dp):
-        log={'state':state,'command':command,'dp':dp}
+    def append_dynamics(self,state,command,dp,next_pos):
+        log={'state':state,'command':command,'dp':dp,'next_pos':next_pos}
         self.dynamics.append(log)
 
     def save_dynamics(self,idx=0):

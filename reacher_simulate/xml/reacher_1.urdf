@@ -22,42 +22,42 @@
   </link>
   <link name="link1">
     <inertial>
-      <origin xyz="0.07493247407747422 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.19014404558173115 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
       <mass value="1.0"/>
       <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
     </inertial>
     <visual>
       <geometry>
-        <cylinder radius="0.015" length="0.14986494815494844"/>
+        <cylinder radius="0.015" length="0.3802880911634623"/>
       </geometry>
       <material name="blue"/>
-      <origin xyz="0.07493247407747422 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.19014404558173115 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.015" length="0.14986494815494844"/>
+        <cylinder radius="0.015" length="0.3802880911634623"/>
       </geometry>
-      <origin xyz="0.07493247407747422 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.19014404558173115 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </collision>
   </link>
   <link name="link2">
     <inertial>
-      <origin xyz="0.10484828096743573 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.05993615370946949 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
       <mass value="1.0"/>
       <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
     </inertial>
     <visual>
       <geometry>
-        <cylinder radius="0.015" length="0.20969656193487146"/>
+        <cylinder radius="0.015" length="0.11987230741893898"/>
       </geometry>
       <material name="sky"/>
-      <origin xyz="0.10484828096743573 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.05993615370946949 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.015" length="0.20969656193487146"/>
+        <cylinder radius="0.015" length="0.11987230741893898"/>
       </geometry>
-      <origin xyz="0.10484828096743573 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.05993615370946949 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </collision>
   </link>
   <link name="link3">
@@ -92,14 +92,14 @@
     <parent link="link1"/>
     <child link="link2"/>
     <axis xyz="0. 0. 1."/>
-    <origin xyz="0.14986494815494844 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+    <origin xyz="0.3802880911634623 0.0 0.0" rpy="0.0 -0.0 0.0"/>
   </joint>
   <joint name="joint3" type="revolute">
     <limit effort="300.0" velocity="200.0" lower="-2.96705" upper="2.96705"/>
     <parent link="link2"/>
     <child link="link3"/>
     <axis xyz="0. 0. 1."/>
-    <origin xyz="0.20969656193487146 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+    <origin xyz="0.11987230741893898 0.0 0.0" rpy="0.0 -0.0 0.0"/>
   </joint>
   <material name="yellow">
     <color rgba="0.8 0.8 0.  1. "/>

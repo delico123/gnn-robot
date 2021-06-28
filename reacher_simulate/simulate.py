@@ -7,7 +7,7 @@ from tools.save_logger import logger
 
 XML_DIR = './xml' # TODO
 
-def simulate_p(N, num_iter, max_vel=1, save_idx=0, render=True, str_only=False, min_joint=2, max_joint=3):
+def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, min_joint=2, max_joint=3):
     """
     N: num_urdf
     """
@@ -43,10 +43,10 @@ def simulate_p(N, num_iter, max_vel=1, save_idx=0, render=True, str_only=False, 
         for j in range(MAX_RANGE):
             command=[]
             for i in range(reacher.NumJoints-1):
-                command.append(max_vel* (random.random()-0.5))
-            joint_pos,dp=reacher.move_pose(command)
+                command.append(max_pos* (random.random()-0.5))
+            joint_pos,dp,next_pos=reacher.move_pose(command)
             if j%5==0:
-                Logger.append_dynamics(joint_pos,command,dp)
+                Logger.append_dynamics(joint_pos,command,dp,next_pos)
         Logger.save_dynamics(idx)
         reacher.close()
 
