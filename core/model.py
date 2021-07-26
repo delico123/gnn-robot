@@ -272,7 +272,47 @@ class SimpleDecoder(nn.Module):
         return d
 """"""
 
-def build_rstruc_model(args, sweep_config=None):
+class FNET(nn.Module):
+    def __init__(self, in_s=16, in_m=16, out_=2):
+        super(FNET, self).__init__()
+        
+        """
+        in_: int
+            len(data.x)
+        """
+
+        # self.in_ = in_s + in_m #Hard coded
+        self.in_ = in_s + in_m + 2 #Hard coded
+        self.latent = self.in_ * 2
+        self.out_ = out_
+
+        self.lin1 = nn.Linear(self.in_, self.latent)
+        self.lin2 = nn.Linear(self.latent, self.latent)
+        self.lin3 = nn.Linear(self.latent, out_)
+
+    def forward(self, rs, rm, dp):
+        rs = torch.flatten(rs)
+        rm = torch.flatten(rm)
+        dp = torch.flatten(dp) #Hard coded 2
+        
+        rz = torch.cat([rs, rm, dp], dim=0) #.unsqeeuze
+        d = self.lin1(rz)
+        d = d.relu()
+        d = self.lin2(d)
+        d = d.sigmoid()
+        d = self.lin3(d)
+
+        return d
+
+    def loss(self, predict, target):
+        criterion = nn.MSELoss()
+        # criterion = nn.L1Loss()
+
+        loss = criterion(predict, target)
+
+        return loss
+
+def build_rstruc_model(args, feat=2, sweep_config=None):
     logging.info("build model..")
     if args.rs_sweep:
         config = dict(sweep_config)
@@ -287,17 +327,19 @@ def build_rstruc_model(args, sweep_config=None):
     latent_size = config['latent_size']
 
     if args.rs_conv == "tree":
-        struc_tree_encoder = StrucTreeEncoder(latent=latent_size,
+        struc_tree_encoder = StrucTreeEncoder(in_=feat, #Hard coded
+                                            latent=latent_size,
                                             out_=latent_size)
         struc_tree_decoder = StrucTreeDecoder(in_=latent_size,
-                                            latent=latent_size)
+                                            latent=latent_size,
+                                            out_=feat)
     elif args.rs_conv == "test_decoder":
         struc_tree_encoder = ConcatEncoder()
         struc_tree_decoder = StrucTreeDecoder(in_=16, # concated == 16
                                         latent=latent_size,
                                         out_=2) # node feat to recon
 
-    elif args.rs_conv == "test_simple_decoder":
+    elif args.rs_conv == "test_simple_decoder": #ground truth
         struc_tree_encoder = ConcatEncoder()
         struc_tree_decoder = SimpleDecoder(in_=16, # concated == 16
                                         latent=latent_size)
@@ -317,3 +359,133 @@ def build_rstruc_model(args, sweep_config=None):
                decoder=struc_tree_decoder)
 
     return net, config
+
+
+def build_full_model(args): # TODO: merge nets
+    config = {
+        'optimizer': args.opt,
+        'learning_rate': args.rs_lr,
+        'latent_size': args.rs_latent,
+        'opt_epsilon': args.opt_eps
+    }
+
+    rs_size = args.rs_latent
+    rm_size = args.rs_latent # TODO # Hard coded
+    # rm_size = 16 # TODO # Hard coded
+
+    net = FNET(rs_size, rm_size, out_=8) #Hard coded
+
+    return net, config
+
+# class TreeConv(MessagePassing): # TODO: Generalize
+#     def __init__(self, in_=2, out_=16, latent=16, loc_msg=False):
+#         """
+#         (down==spread==root->leaf, up==collect==l->r)
+
+#         in == |node|
+#         latent == |message| == |hidden_down|
+#         out_ == |hidden_down|
+#         """
+#         super(TreeConv, self).__init__(aggr='add')
+
+#         # latent size
+#         _msg_down = _msg_up = _lnt_down = latent
+#         _lnt_up = out_
+#         _edge = 0
+
+#         self.empty_msg = torch.zeros(_msg_down)
+#         # self.loc_msg = loc_msg
+#         self.latent = latent
+
+#         # self.lin_root = nn.Linear(in_, latent) # separate fn for initial state
+
+#         # message fn
+#         self.message_down = nn.Sequential(nn.Linear(_lnt_down+_edge, _msg_down),
+#                                     #   nn.BatchNorm1d(latent),
+#                                     #   nn.ReLU())
+#                                       nn.Sigmoid())
+#         self.message_up = nn.Sequential(nn.Linear(_lnt_up+_edge, _msg_up),
+#                                     # nn.BatchNorm1d(out_),
+#                                     # nn.ReLU())
+#                                     nn.Sigmoid())
+    
+#         # update fn
+#         self.update_down = nn.Sequential(nn.Linear(in_+_msg_down, _lnt_down),
+#         # self.update_down = nn.Sequential(nn.Linear(in_+_msg_down+8, _lnt_down),
+#                                     nn.Sigmoid())
+#         self.update_up = nn.Sequential(nn.Linear(_lnt_down+_msg_up, _lnt_up),
+#                                     nn.Sigmoid())
+
+
+#     def _organize_edges(self, edge_index, num_node):
+#         # TODO: generalize to tree (mltr), use edge_index, remove num_node
+#         # direction[step[ins[], outs[]]]
+        
+#         prt = range(0, num_node-1)
+#         chd = range(1, num_node)
+
+#         down_ei = torch.tensor([[[p],[c]] for p, c in zip(prt, chd)])
+#         up_ei = down_ei.flip([0,1])
+
+#         return down_ei, up_ei
+
+#     def forward(self, x, edge_index, num_node=8):
+#         # Edges
+#         down_ei, up_ei = self._organize_edges(edge_index, num_node)
+#         # Node vectors
+#         # x = self.lin_root(x) ###
+#         # x = x.relu()
+
+#         # SPREAD
+#         x = self.propagate_oneway(down_ei, x, self.message_down, self.update_down)
+
+#         # COLLECT
+#         self.loc_msg = False
+#         x = self.propagate_oneway(up_ei, x, self.message_up, self.update_up)
+#         # raise NotImplementedError
+
+#         return x
+
+#     def propagate_oneway(self, edge_indices, x, fn_m, fn_u):
+#         """ x -> h
+#         """
+#         # Handling x: (Currently, v3)
+#         # v1) Zero padding, 
+#         # v2) Separate linear layer, 
+#         # v3) Message zero w/ update fn
+#         # 0에 있는 node에 대해 update 먼저 진행. msg는 0으로. (OR, use separate fn)
+#         m_e = self.empty_msg.repeat(x.shape[0], 1)
+#         h = torch.cat([x, m_e], dim=1)
+#         # if self.loc_msg:
+#         #     mmm = torch.zeros(8)
+#         #     mmm = mmm.repeat(x.shape[0], 1)
+#         #     h = torch.cat([h, mmm], dim=1)
+#         h = fn_u(h)
+
+#         for edge_index in edge_indices:
+#             # logging.debug(edge_index)
+#             # logging.debug(x)
+#             h = self.propagate(edge_index=edge_index, x=x, h=h.clone(), fn_m=fn_m, fn_u=fn_u)
+#             # h[edge_index[1]] = h_updated[edge_index[1]]
+#         return h
+        
+#     def message(self, h_j, fn_m, edge_index_j):
+#         """ i: receiver, j: sender (j -> i, will be aggregated at i)
+#         - Currently, only receives node latent vector.
+#         Need to be updated to receive edge features also.
+#         - Message does not depend on the receiver node.
+#         - (Sender's vec, edge vec) -> (message vec)
+#         """
+#         # m = torch.cat([h_j, e_j], dim=1) # include edge feat
+#         m = fn_m(h_j)
+#         # if self.loc_msg:
+#         #     m = torch.cat([m, torch.tensor(np.eye(8)[edge_index_j], dtype=m.dtype)], dim=1)
+#             # m = torch.tensor(np.eye(self.latent)[edge_index_j])
+#         # logging.debug(f"\t- message:\t{m}")
+#         return m
+
+#     def update(self, m, x, h, fn_u, edge_index_i):
+#         """ pop_first == True """
+#         h_updated = fn_u(torch.cat([x, m], dim=1))
+#         h[edge_index_i] = h_updated[edge_index_i]
+#         return h
