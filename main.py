@@ -5,11 +5,11 @@ import argparse
 import torch
 import wandb
 
-from core.data_loader import get_structure_loader
+from core.data_loader import get_structure_loader, get_motion_loader
 from core.solver import Solver
 # from core.solver
 
-
+# TODO: dataloader
 def main(args):
     logging.info(args)
     torch.manual_seed(args.seed)
@@ -20,24 +20,46 @@ def main(args):
     if args.mode == 'rstruc':
         logging.info('*--Structure reconstruction task--*')
         
-
         # Data Loader
         structure_data_loader = get_structure_loader(task=args.task, 
+                                                     eval_ratio=args.eval_ratio,
                                                      batch_size=args.rs_bs,
                                                      node_padding=args.node_padding,
                                                      data_simple=args.data_simple
                                                      )
         # Train
-        solver.train_rstruc(structure_data_loader)
+        solver.train_reconstruc(structure_data_loader)
+
+    elif args.mode == 'rmotion':
+        logging.info('*--Motion reconstruction task--*')
+        
+        # Data Loader
+        structure_data_loader = get_motion_loader(task=args.task, 
+                                                     eval_ratio=args.eval_ratio,
+                                                     batch_size=args.rs_bs,
+                                                     node_padding=args.node_padding,
+                                                     data_simple=args.data_simple
+                                                     )
+        # Train
+        solver.train_reconstruc(structure_data_loader)
 
 
-    # elif args.mode == 'train':
-    #     print('*--TRAIN--*')
+    elif args.mode == 'train':
+        logging.info('*--TRAIN with pretrained models--*')
+        data_loader = get_motion_loader(task=args.task, 
+                                        eval_ratio=args.eval_ratio,
+                                        batch_size=args.rs_bs,
+                                        node_padding=args.node_padding,
+                                        data_simple=args.data_simple
+                                        )
+        solver.train(data_loader)
+        
 
     # elif args.mode == 'test':
     #     print('--*TEST*--')
 
     else:
+        logging.warning(f"{args.mode}")
         raise NotImplementedError
 
 
@@ -57,16 +79,29 @@ if __name__ == '__main__':
 
     # mode
     parser.add_argument('--mode', type=str, default='rstruc',
-                        choices=['rstruc', 'rdynam', 'train', 'eval'],
+                        choices=['rstruc', 'rmotion', 'train', 'eval'],
                         help='')
     # parser.add_argument('--recon_source', type=str, default='train',
     #                     choices=['train', 'load'],
     #                     help='')
     # parser.add_argument()
+    parser.add_argument('--freeze', action='store_true', default=False,
+                        help='')
 
     parser.add_argument('--task', type=str, default='Reacher',
                         # choices=['Reacher'],
                         help='')
+    parser.add_argument('--subtask', type=str, default='forward',
+                        choices=['forward','inverse'],
+                        help='')
+
+    parser.add_argument('--eval', type=str, default='val',
+                        choices=['train', 'val', 'partial'],
+                        help='train: train loss, val: val loss, partial: joint')
+    parser.add_argument('--eval_ratio', type=float, default=0.2,
+                        help='val: ratio, partial: ')
+
+    # Phase1: Reconstruct structure
     parser.add_argument('--rs_epoch', type=int, default=200,
                         help='Recontruction task, structure, epoch.')
     parser.add_argument('--rs_bs', type=int, default=1,
@@ -74,7 +109,7 @@ if __name__ == '__main__':
     parser.add_argument('--opt', type=str, default='adam',
                         choices=['adam', 'sgd'],
                         help='Optimizer')
-    parser.add_argument('--opt_eps', type=float, default=1e-8,
+    parser.add_argument('--opt_eps', type=float, default=0.001, # ddefault: 1e-08
                         help='epsilon')
     parser.add_argument('--rs_lr', type=float, default=0.001,
                         help='Recontruction task, structure, learning_rate.')
@@ -91,6 +126,11 @@ if __name__ == '__main__':
                         help='Enable W&B hyperparam sweep')
     parser.add_argument('--rs_sweep_short', action='store_true', default=False,
                         help='Enable W&B hyperparam sweep, short')
+    parser.add_argument('--rs_ckpt', type=str, default='log/rs',
+                        help='checkpoint dir for rs')
+    
+    parser.add_argument('--rm_ckpt', type=str, default='log/rm',
+                        help='checkpoint dir for rm')
 
     # TEMP
     parser.add_argument('--rs_dnorm', action='store_true', default=False,
@@ -192,6 +232,3 @@ if __name__ == '__main__':
 
     else:
         main(args)
-
-
-# TODO: data generator

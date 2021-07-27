@@ -273,16 +273,16 @@ class SimpleDecoder(nn.Module):
 """"""
 
 class FNET(nn.Module):
-    def __init__(self, in_s=16, in_m=16, out_=2):
+    def __init__(self, in_s=16, in_m=16, out_=2, subtask='forward'):
         super(FNET, self).__init__()
         
         """
         in_: int
             len(data.x)
         """
-
-        # self.in_ = in_s + in_m #Hard coded
-        self.in_ = in_s + in_m + 2 #Hard coded
+        sub_ = 2 if subtask == 'inverse' else 0
+        
+        self.in_ = in_s + in_m + sub_
         self.latent = self.in_ * 2
         self.out_ = out_
 
@@ -290,12 +290,15 @@ class FNET(nn.Module):
         self.lin2 = nn.Linear(self.latent, self.latent)
         self.lin3 = nn.Linear(self.latent, out_)
 
-    def forward(self, rs, rm, dp):
+    def forward(self, rs, rm, dp=None):
         rs = torch.flatten(rs)
         rm = torch.flatten(rm)
-        dp = torch.flatten(dp) #Hard coded 2
+        if dp is not None: # inverse
+            dp = torch.flatten(dp)
+            rz = torch.cat([rs, rm, dp], dim=0) #.unsqeeuze
+        else: # forward
+            rz = torch.cat([rs, rm], dim=0) #.unsqeeuze
         
-        rz = torch.cat([rs, rm, dp], dim=0) #.unsqeeuze
         d = self.lin1(rz)
         d = d.relu()
         d = self.lin2(d)
@@ -305,8 +308,8 @@ class FNET(nn.Module):
         return d
 
     def loss(self, predict, target):
-        criterion = nn.MSELoss()
-        # criterion = nn.L1Loss()
+        # criterion = nn.MSELoss()
+        criterion = nn.L1Loss()
 
         loss = criterion(predict, target)
 
@@ -341,7 +344,7 @@ def build_rstruc_model(args, feat=2, sweep_config=None):
 
     elif args.rs_conv == "test_simple_decoder": #ground truth
         struc_tree_encoder = ConcatEncoder()
-        struc_tree_decoder = SimpleDecoder(in_=16, # concated == 16
+        struc_tree_decoder = SimpleDecoder(in_=feat*args.node_padding, # concated == 16
                                         latent=latent_size)
 
     elif args.rs_conv == "tree_enc_simple_dec":
@@ -369,11 +372,21 @@ def build_full_model(args): # TODO: merge nets
         'opt_epsilon': args.opt_eps
     }
 
-    rs_size = args.rs_latent
-    rm_size = args.rs_latent # TODO # Hard coded
-    # rm_size = 16 # TODO # Hard coded
+    if args.rs_conv == 'test_simple_decoder': # (gt)
+        rs_size = 16 # TODO # Hard coded (gt) concate encoder
+        if args.subtask == 'forward':
+            rm_size = 16 # TODO # Hard coded (gt) concate encoder forward
+        elif args.subtask == 'inverse':
+            rm_size = 8 # TODO # Hard coded (gt) concate encoder inverse
+    elif args.rs_conv == 'tree':
+        rs_size = args.rs_latent # (ours)
+        rm_size = args.rs_latent # TODO # Hard coded (ours)
+    else:
+        raise NotImplementedError
 
-    net = FNET(rs_size, rm_size, out_=8) #Hard coded
+    out_ = 2 if args.subtask == 'forward' else 8  #Hard coded
+
+    net = FNET(rs_size, rm_size, out_=out_, subtask=args.subtask)
 
     return net, config
 

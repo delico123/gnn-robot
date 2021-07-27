@@ -16,6 +16,12 @@ Specific version: TBD
 # Generate data. Structure only
 cd ./reacher_simulate
 python main.py --str_only --num_urdf 1000 --min_njoint 2 --max_njoint 7
+
+# Dyn after str_only created
+cd ./reacher_simulate
+python main.py --dyn_only --num_urdf 1000 --min_njoint 3 --max_njoint 3 --num_iter 20 --save_idx 1
+
+# TODO: joint
 ```
 
 ## Run model

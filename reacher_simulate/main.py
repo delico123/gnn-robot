@@ -16,13 +16,17 @@ parser.add_argument('--save_idx', type=int, default=0, help='saved idx for datas
 parser.add_argument('--render', type=int, default=0, help='if want to render bullet')
 
 parser.add_argument('--str_only', action='store_true', help='create structure data only (no simulation)')
+parser.add_argument('--dyn_only', action='store_true', help='create dynamic data only, using existing urdf')
 
 args = parser.parse_args()
 
-print('making urdf file')
-for i in range(args.num_urdf):
-    make_reacher_urdf(i, args.min_njoint, args.max_njoint, args.min_link, args.max_link, args.str_only)
-print('made urdf file')
+if args.dyn_only:
+    pass
+else:
+    print('making urdf file')
+    for i in range(args.num_urdf):
+        make_reacher_urdf(i, args.min_njoint, args.max_njoint, args.min_link, args.max_link, args.str_only)
+    print('made urdf file')
 
 print('run simulation')
 simulate_p(args.num_urdf,args.num_iter,args.max_pos,args.save_idx,args.render, args.str_only, args.min_njoint, args.max_njoint)
