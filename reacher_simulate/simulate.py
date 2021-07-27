@@ -41,9 +41,9 @@ def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, 
                     command=[]
                     for i in range(reacher.NumJoints-1):
                         command.append(max_pos * (random.random()-0.5))
-                    joint_pos, dp, next_pos=reacher.move_pose(command)
+                    joint_pos, dp, pos, next_pos=reacher.move_pose(command)
                     if j%5==0:
-                        Logger.append_dynamics(joint_pos,command,dp,next_pos)
+                        Logger.append_dynamics(joint_pos, command, dp, pos, next_pos)
                 Logger.save_dynamics(idx)
                 reacher.close()
 

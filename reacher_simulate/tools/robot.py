@@ -34,6 +34,6 @@ class Reacher():
         for i in range(2):
             dp[i]=next_pos[i]-pos[i]
         #print(dp)
-        return joint_state,dp,next_pos
+        return joint_state, dp, pos, next_pos
     def close(self):
         p.resetSimulation()
