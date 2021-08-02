@@ -36,14 +36,11 @@ def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, 
                 reacher.load(urdf_path)
 
                 MAX_RANGE=int(num_iter)
-                Logger.dynamics=[]
                 for j in range(MAX_RANGE):
-                    command=[]
-                    for i in range(reacher.NumJoints-1):
-                        command.append(max_pos * (random.random()-0.5))
-                    joint_pos, dp, pos, next_pos=reacher.move_pose(command)
-                    if j%5==0:
-                        Logger.append_dynamics(joint_pos, command, dp, pos, next_pos)
+                    #time.sleep(1)
+                    collision,joint_pos, pos,=reacher.move_pose()
+                    if collision ==False:
+                        Logger.append_dynamics(joint_pos,pos)
                 Logger.save_dynamics(idx)
                 reacher.close()
 
