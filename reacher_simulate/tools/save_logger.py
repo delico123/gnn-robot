@@ -31,7 +31,7 @@ class logger():
             self.memory.append({'structure':struct})
 
     def save_json(self,save):
-        PATH='./res/res_'+str(save)+'.json'
+        PATH='./res/motion/res_'+str(save)+'.json'
         with open(PATH,'w') as jf:
             json.dump(self.memory,jf,indent=4)
 

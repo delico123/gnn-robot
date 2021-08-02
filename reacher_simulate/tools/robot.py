@@ -35,9 +35,8 @@ class Reacher():
             collsion= False
         else:
             collsion = True
-        pos = p.getLinkState(self.robot_id,self.NumJoints-1)[0]
-        #print(dp)
-        return joint_state, pos,collsion
+        pos = p.getLinkState(self.robot_id,self.NumJoints-1)[0] 
+        return joint_state, (pos[0],pos[1]),collsion
     
     def get_current_pos():
         pos = p.getLinkState(self.robot_id,self.NumJoints-1)[0]
