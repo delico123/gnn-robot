@@ -58,12 +58,12 @@ def get_motion_loader(task='Reacher', eval_ratio=0, batch_size=16, node_padding=
     logging.info("Reacher")
 
     if task is 'Reacher':
-        data_path = 'reacher_simulate/res/motion'
+        data_path = 'reacher_simulate/res/motion_multi'
     else:
         raise NotImplementedError
 
     if data_simple:
-        data_path = os.path.join(data_path, 'debug')
+        data_path = os.path.join(data_path, 'debug_motion')
         
     data_file_names = [x for x in os.listdir(data_path) if x.endswith(".json")]
     data_file_names.sort()
@@ -236,7 +236,8 @@ def _to_dataset_motion(data_path, data_file_names, node_zero_padding=False, node
             # motion
             for dynamics in data_raw_dynamics:
                 y_dp = torch.tensor(dynamics['dp'], dtype=torch.float)
-                y_np = torch.tensor(dynamics['next_pos'][:2], dtype=torch.float)
+                y_pos = torch.tensor(dynamics['pos'][:2], dtype=torch.float)
+                y_npos = torch.tensor(dynamics['next_pos'][:2], dtype=torch.float)
 
                 if node_zero_padding: # TODO: node_max = max(node_max, len())
                     assert(node_max >= len(dynamics['state']))
@@ -265,7 +266,7 @@ def _to_dataset_motion(data_path, data_file_names, node_zero_padding=False, node
                 # x = np.concatenate((x, edge_info), axis=1)
 
                 x = torch.tensor(x, dtype=torch.float)
-                edge_index = torch.tensor(edge_index)
+                # edge_index = torch.tensor(edge_index)
                 """"""
 
                 """for debugging"""
@@ -278,7 +279,7 @@ def _to_dataset_motion(data_path, data_file_names, node_zero_padding=False, node
                 #     print(edge_info.shape)
                 #     flag = False
 
-                data_motion = torch_geometric.data.Data(x=x, edge_index=edge_index.t().contiguous(), y=y_dp, s=x_s, c=x_c, np=y_np)
+                data_motion = torch_geometric.data.Data(x=x, edge_index=edge_index.t().contiguous(), y=y_dp, s=x_s, c=x_c, p=y_pos, np=y_npos)
                 
                 dataset.append([data_structure, data_motion])
 

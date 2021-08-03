@@ -38,23 +38,23 @@ class Solver(nn.Module):
             self.net_rs, config = build_rstruc_model(args, config)
         
         else:
-            feat = 1 if args.subtask == 'inverse' else 2  # TODO ASDFASDF
+            feat = 2 if args.subtask == 'forward' else 1  # (old forward)
 
             if args.mode == 'rstruc':
                 self.net_rs, config = build_rstruc_model(args)
-                self.nets = self.net_rs
+                self.nets = [self.net_rs]
                 self.conv = args.rs_conv
 
             elif args.mode == 'rmotion':
                 self.net_rm, config = build_rstruc_model(args, feat=feat)
-                self.nets = self.net_rm
+                self.nets = [self.net_rm]
                 self.conv = args.rs_conv # TODO
 
             elif args.mode == 'train':
                 self.net_rs, config_rs = build_rstruc_model(args)
                 self.net_rm, config_rm = build_rstruc_model(args, feat=feat) # TODO
                 self.net_full, config = build_full_model(args) # partial full (only mlp)
-                self.nets = self.net_full
+                self.nets = [self.net_full, self.net_rs, self.net_rm]
                 self.conv = args.rs_conv
 
             else:
@@ -77,7 +77,7 @@ class Solver(nn.Module):
                 wandb.watch(self.nets, log_freq=100)
             
         # Optimizer
-        self.optimizer = get_optimizer(config, self.nets)
+        self.optimizer = get_optimizer(args, config, self.nets)
 
         self.to(self.device)
 
@@ -85,7 +85,7 @@ class Solver(nn.Module):
         """ train structure reconstruction model (rs)
         """
         args = self.args
-        net = self.nets
+        net = self.nets[0]
         optimizer = self.optimizer
 
         train_loader, val_loader = data_loader
@@ -101,8 +101,10 @@ class Solver(nn.Module):
                     data = data_set
                 elif args.mode == "rmotion":
                     data = data_set[1]
-                    if args.subtask == "inverse":
-                        data.x = data.s # 8 or 16
+                    if args.subtask == "forward":
+                        data.x = data.x_s # state only
+                    # elif args.subtask == "inverse":
+                        # data.x = data.s # 8 or 16
                 else:
                     data = data_set[1]
 
@@ -207,7 +209,7 @@ class Solver(nn.Module):
         """ train structure reconstruction model (rs)
         """
         args = self.args
-        net = self.nets
+        net = self.nets[0] # self.net_full
 
         if args.rs_conv == 'test_simple_decoder':
             path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-1623.pth") # gt
@@ -219,17 +221,17 @@ class Solver(nn.Module):
                 NotImplementedError
 
         elif args.rs_conv=='tree':
-            path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-1636.pth") # ours
-            if args.subtask == 'forward':
-                path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-2030.pth") # ours forward
-            elif args.subtask == 'inverse':
-                path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-2054.pth") # ours inverse
-            else:
-                NotImplementedError
+            path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-ours-ls_8.pth") # ours
+        #     if args.subtask == 'forward':
+        #         path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-2030.pth") # ours forward (state + cmd)
+        #     elif args.subtask == 'inverse':
+            path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-ours-inverse-ls_8.pth") # ours inverse (state)
+        #     else:
+        #         NotImplementedError
 
         
         self.net_rs.load_state_dict(torch.load(path_rs))
-        # self.net_rm.load_state_dict(torch.load(path_rm))
+        self.net_rm.load_state_dict(torch.load(path_rm))
 
         net_rs = self.net_rs
         net_rm = self.net_rm
@@ -237,17 +239,23 @@ class Solver(nn.Module):
 
         train_loader, val_loader = data_loader
 
-        for epoch in range(args.rs_epoch):
+        for epoch in range(args.rs_epoch+1):
             # Train
             net.train()
 
             # # freeze
             # if args.freeze:
-            #     net_rs.eval()
-            #     net_rm.eval()
+
+            for param in net.parameters():
+                print(param)
+            print("!@#$$!#$!@#$!@#$")
+            for param in net_rs.parameters():
+                print(param)
+            print("!@#$$!#$!@#$!@#$")
 
             total_loss = 0
             for data_set in train_loader:
+
                 d_struc = data_set[0]
                 d_motion = data_set[1]
 
@@ -255,7 +263,7 @@ class Solver(nn.Module):
 
                 num_node = d_struc.y
 
-                if args.subtask == 'forward':
+                if args.subtask == 'forward': # note: old forward
                     # (forward)
                     z_struc = net_rs.encode(d_struc.x, num_node, d_struc.edge_index)
                     z_motion = net_rm.encode(d_motion.x, num_node, d_motion.edge_index) # x = s + c
@@ -263,7 +271,7 @@ class Solver(nn.Module):
                     
                     loss = net.loss(predict=output[:num_node], target=d_motion.y) # Case: loss single, node only
                 
-                elif args.subtask == 'inverse':
+                elif args.subtask == 'inverse': # note: old inverse
                     z_struc = net_rs.encode(d_struc.x, num_node, d_struc.edge_index)
                     z_motion = net_rm.encode(d_motion.s, num_node, d_motion.edge_index)
                     dp = d_motion.y # ASDFASDF, 2
@@ -271,19 +279,45 @@ class Solver(nn.Module):
                     
                     loss = net.loss(predict=output[:num_node], target=d_motion.c[:num_node]) # Case: loss single, node only
                 
+                elif args.subtask == 'multi': 
+                    z_struc = net_rs.encode(d_struc.x, num_node, d_struc.edge_index)
+                    z_motion = net_rm.encode(d_motion.s, num_node, d_motion.edge_index)
+                    
+                    out_f, out_i = net(z_struc, z_motion, d_motion.p) # p: ee pos
+                    
+                    loss = net.loss_multi(predict_f=out_f[:num_node], 
+                                            predict_i=out_i[:num_node],
+                                            target_f=d_motion.p,
+                                            target_i=d_motion.s[:num_node])
+
+                    # if args.loss_decoder:
+                        # loss_dec_structure = 
+                        # loss_dec_motion = 
+                        # loss += loss_dec_structure + loss_dec_motion
+
                 else:
                     raise NotImplementedError
 
                 total_loss += loss.item()
 
-                loss.backward()
-                optimizer.step()
+                if epoch > 0:
+                    loss.backward()
+                    optimizer.step()
+            print("!@#$$!#$!@#$!@#$")
+            print("!@#$$!#$!@#$!@#$")
+            print("!@#$$!#$!@#$!@#$")
+            for param in net.parameters():
+                print(param)
+            print("!@#$$!#$!@#$!@#$")
+            for param in net_rs.parameters():
+                print(param)
+            print("!@#$$!#$!@#$!@#$")
 
             # Eval
             net.eval()
 
             eval_loss = 0
-            for data_set in train_loader:
+            for data_set in val_loader:
                 d_struc = data_set[0]
                 d_motion = data_set[1]
 
@@ -304,6 +338,17 @@ class Solver(nn.Module):
                     output = net(z_struc, z_motion, dp) # cmd: 8
                     
                     loss = net.loss(predict=output[:num_node], target=d_motion.c[:num_node]) # Case: loss single, node only
+
+                elif args.subtask == 'multi': 
+                    z_struc = net_rs.encode(d_struc.x, num_node, d_struc.edge_index)
+                    z_motion = net_rm.encode(d_motion.s, num_node, d_motion.edge_index)
+                    
+                    out_f, out_i = net(z_struc, z_motion, d_motion.p) # p: ee pos
+                    
+                    loss = net.loss_multi(predict_f=out_f[:num_node], 
+                                            predict_i=out_i[:num_node],
+                                            target_f=d_motion.p,
+                                            target_i=d_motion.s[:num_node])
                 
                 else:
                     raise NotImplementedError
@@ -319,7 +364,7 @@ class Solver(nn.Module):
             if epoch % args.log_per == 0:
                 logging.info(f"Epoch: {epoch}, Loss: {total_loss/len(train_loader)}")
                 logging.info(f"Epoch: {epoch}, Loss_val: {eval_loss/len(val_loader)}")
-                logging.info(f"O: {output}, T:{d_motion.c}")
+                logging.info(f"\nO: {out_f}|{out_i}\nT:{d_motion.p}|{d_motion.s}")
 
         # save model # TODO: ckpt
         if args.wnb:

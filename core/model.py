@@ -273,45 +273,83 @@ class SimpleDecoder(nn.Module):
 """"""
 
 class FNET(nn.Module):
-    def __init__(self, in_s=16, in_m=16, out_=2, subtask='forward'):
+    def __init__(self, in_s=16, in_m=16, ee_=2, subtask='forward'):
         super(FNET, self).__init__()
         
         """
         in_: int
             len(data.x)
         """
-        sub_ = 2 if subtask == 'inverse' else 0
+        self.subtask = subtask
         
-        self.in_ = in_s + in_m + sub_
-        self.latent = self.in_ * 2
-        self.out_ = out_
+        f_in_ = in_s + in_m
+        f_out_ = ee_
 
-        self.lin1 = nn.Linear(self.in_, self.latent)
-        self.lin2 = nn.Linear(self.latent, self.latent)
-        self.lin3 = nn.Linear(self.latent, out_)
+        i_in_ = in_s + ee_
+        i_out_ = in_m
 
-    def forward(self, rs, rm, dp=None):
+        # c_in_ = in_s + in_m
+        # c_out_ = 1
+
+        self.t_forward = nn.Sequential(
+            nn.Linear(f_in_, f_in_*2),
+            nn.ReLU(),
+            nn.Linear(f_in_*2, f_in_*2),
+            nn.ReLU(),
+            nn.Linear(f_in_*2, f_out_)
+        )
+
+        self.t_inverse = nn.Sequential(
+            nn.Linear(i_in_, i_in_*2),
+            nn.ReLU(),
+            nn.Linear(i_in_*2, i_in_*2),
+            nn.ReLU(),
+            nn.Linear(i_in_*2, i_out_)
+        )
+
+        # self.t_collision = nn.Sequential(
+        #     nn.Linear(self.in_, self.latent),
+        #     nn.ReLU(),
+        #     nn.Linear(self.latent, self.latent),
+        #     nn.ReLU(),
+        #     nn.Linear(self.latent, out_)
+        # )
+
+
+    def forward(self, rs, rm, ee=2):
         rs = torch.flatten(rs)
         rm = torch.flatten(rm)
-        if dp is not None: # inverse
-            dp = torch.flatten(dp)
-            rz = torch.cat([rs, rm, dp], dim=0) #.unsqeeuze
-        else: # forward
-            rz = torch.cat([rs, rm], dim=0) #.unsqeeuze
         
-        d = self.lin1(rz)
-        d = d.relu()
-        d = self.lin2(d)
-        d = d.sigmoid()
-        d = self.lin3(d)
+        if self.subtask in ['forward', 'multi']:
+            rsm = torch.cat([rs, rm], dim=0) #.unsqeeuze
+            out_f = self.t_forward(rsm)
+        
+        if self.subtask in ['inverse', 'multi']:
+            ee = torch.flatten(ee)
+            rse = torch.cat([rs, ee], dim=0) #.unsqeeuze
+            out_i = self.t_inverse(rse)
 
-        return d
+        # TODO: collision task
+
+        return out_f, out_i
 
     def loss(self, predict, target):
         # criterion = nn.MSELoss()
         criterion = nn.L1Loss()
 
-        loss = criterion(predict, target)
+        loss = criterion(predict.view(-1,1), target)
+
+        return loss
+
+    def loss_multi(self, predict_f, predict_i, target_f, target_i):
+        criterion = nn.L1Loss()
+
+        loss_forward = criterion(predict_f.view(-1,1), target_f)
+        loss_inverse = criterion(predict_i.view(-1,1), target_i)
+
+        loss = loss_forward + loss_inverse
+
+        # BCEWithLogitsLoss for c
 
         return loss
 
@@ -384,9 +422,7 @@ def build_full_model(args): # TODO: merge nets
     else:
         raise NotImplementedError
 
-    out_ = 2 if args.subtask == 'forward' else 8  #Hard coded
-
-    net = FNET(rs_size, rm_size, out_=out_, subtask=args.subtask)
+    net = FNET(rs_size, rm_size, ee_=2, subtask=args.subtask)
 
     return net, config
 

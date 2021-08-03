@@ -92,7 +92,7 @@ if __name__ == '__main__':
                         # choices=['Reacher'],
                         help='')
     parser.add_argument('--subtask', type=str, default='forward',
-                        choices=['forward','inverse'],
+                        choices=['forward','inverse','multi'],
                         help='')
 
     parser.add_argument('--eval', type=str, default='val',
