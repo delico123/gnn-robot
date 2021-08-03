@@ -200,11 +200,11 @@ if __name__ == '__main__':
         else:
             param_dict = {
                 'learning_rate': {
-                    # 'values': [0.03, 0.01, 0.001, 0.0001]
-                    'values': [0.0001]
+                    'values': [0.01, 0.001, 0.0001, 0.00001]
+                    # 'values': [0.0001]
                 },
                 'latent_size': {
-                    'values': [4, 8]
+                    'values': [4, 8, 16]
                     # 'values': [4, 8, 64]
                     # 'values': [4, 8, 64, 1024]
                 },
