@@ -1,6 +1,7 @@
 import os
 import logging
 import argparse
+import datetime
 
 import torch
 import wandb
@@ -153,18 +154,22 @@ if __name__ == '__main__':
     # log
     parser.add_argument('--log_per', type=int, default=10,
                         help='Log interval')
-
+    parser.add_argument('--log_save', action='store_true', default=False,
+                        help="T: save log file")
     parser.add_argument('-d', '--debug',
                         action='store_const', dest='loglevel', const=logging.DEBUG,
                         default=logging.WARNING,
                         help="Debugging")
-
     parser.add_argument('-i', '--info',
                         action='store_const', dest='loglevel', const=logging.INFO,
                         help="Info")
 
     args = parser.parse_args()
-    logging.basicConfig(level=args.loglevel)
+
+    now = datetime.datetime.now()
+    now = f"{now.hour}-{now.minute}"
+    log_file = f"./log/logging/{args.mode}-{args.rs_conv}-ls_{args.rs_latent}-{now}" if args.log_save else None
+    logging.basicConfig(level=args.loglevel, filename=log_file)
 
 
     # W&B hyperparam sweep

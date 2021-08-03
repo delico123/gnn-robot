@@ -337,15 +337,15 @@ class FNET(nn.Module):
         # criterion = nn.MSELoss()
         criterion = nn.L1Loss()
 
-        loss = criterion(predict.view(-1,1), target)
+        loss = criterion(predict.view(-1,1), target.view(-1,1))
 
         return loss
 
     def loss_multi(self, predict_f, predict_i, target_f, target_i):
         criterion = nn.L1Loss()
 
-        loss_forward = criterion(predict_f.view(-1,1), target_f)
-        loss_inverse = criterion(predict_i.view(-1,1), target_i)
+        loss_forward = criterion(predict_f.view(-1,1), target_f.view(-1,1))
+        loss_inverse = criterion(predict_i.view(-1,1), target_i.view(-1,1))
 
         loss = loss_forward + loss_inverse
 
@@ -412,10 +412,10 @@ def build_full_model(args): # TODO: merge nets
 
     if args.rs_conv == 'test_simple_decoder': # (gt)
         rs_size = 16 # TODO # Hard coded (gt) concate encoder
-        if args.subtask == 'forward':
-            rm_size = 16 # TODO # Hard coded (gt) concate encoder forward
-        elif args.subtask == 'inverse':
-            rm_size = 8 # TODO # Hard coded (gt) concate encoder inverse
+        # if args.subtask == 'forward':
+        #     rm_size = 16 # TODO # Hard coded (gt) concate encoder forward
+        # elif args.subtask == 'inverse':
+        rm_size = 8 # TODO # Hard coded (gt) concate encoder inverse
     elif args.rs_conv == 'tree':
         rs_size = args.rs_latent # (ours)
         rm_size = args.rs_latent # TODO # Hard coded (ours)

@@ -32,6 +32,6 @@ def get_matrix(PATH=None):
 
 def get_structure(PATH):
     adj, link_info, node_feat = get_matrix(PATH)
-    structure = {'adj':adj,'link_info':link_info, 'node_feat': node_feat}
+    structure = {'adj':adj, 'link_info':link_info, 'node_feat': node_feat, 'urdf': PATH}
     return structure
 
