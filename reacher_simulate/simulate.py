@@ -30,7 +30,7 @@ def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, 
 
         else: # simulate then save
             for idx in range(N):
-                print('simulating reacher_{}'.format(idx))
+                print('simulating j{}-reacher_{}'.format(num_joint, idx))
                 # reacher.load(idx) # Modified: receive urdf path explicitly (path_idx -> urdf_path)
                 urdf_path = os.path.join(XML_DIR, joint_dir, 'reacher_'+str(idx)+'.urdf')
                 reacher.load(urdf_path)
@@ -38,9 +38,10 @@ def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, 
                 MAX_RANGE=int(num_iter)
                 for j in range(MAX_RANGE):
                     #time.sleep(1)
-                    collision,joint_pos, pos,=reacher.move_pose()
-                    if collision ==False:
-                        Logger.append_dynamics(joint_pos,pos)
+                    joint_pos, pos, collision = reacher.move_pose()
+                    if collision == False:
+                        Logger.append_dynamics(joint_pos, pos)
+                        print(j)
                 Logger.save_dynamics(idx)
                 reacher.close()
 

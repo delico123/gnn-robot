@@ -20,7 +20,8 @@ class logger():
         self.dynamics.append(log)
 
     def save_dynamics(self,idx=0):
-        self.memory[idx]['dynamics']=self.dynamics
+        self.memory[idx]['dynamics'] = self.dynamics
+        self.dynamics = [] # Empty the basket
     
     def save_structure(self, num_joint):
         urdf_dir = os.path.join(XML_DIR, 'joint_{}'.format(num_joint))
