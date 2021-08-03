@@ -146,40 +146,41 @@ class Solver(nn.Module):
 
             # Eval
             # if eval_per
-            net.eval()
+            with torch.no_grad():
+                net.eval()
 
-            eval_loss = 0
-            eval_loss_cls = 0
-            eval_loss_rgr = 0
-            for data_set in val_loader:
-                if args.mode == "rstruc":
-                    data = data_set
-                elif args.mode == "rmotion":
-                    data = data_set[1]
-                    if args.subtask == "inverse":
-                        data.x = data.s # 8
-                else:
-                    data = data_set[1]
+                eval_loss = 0
+                eval_loss_cls = 0
+                eval_loss_rgr = 0
+                for data_set in val_loader:
+                    if args.mode == "rstruc":
+                        data = data_set
+                    elif args.mode == "rmotion":
+                        data = data_set[1]
+                        if args.subtask == "inverse":
+                            data.x = data.s # 8
+                    else:
+                        data = data_set[1]
 
-                num_node = data.y if self.args.mode == "rstruc" else data_set[0].y
+                    num_node = data.y if self.args.mode == "rstruc" else data_set[0].y
 
-                z = net.encode(data.x, num_node, data.edge_index)
-                output = net.decode(z, args.node_padding, num_node, data.edge_index)
+                    z = net.encode(data.x, num_node, data.edge_index)
+                    output = net.decode(z, args.node_padding, num_node, data.edge_index)
 
-                if args.mode == 'rstruc':
-                    loss_cls = net.recon_loss_cls(predict=output[:1][:num_node], target=data.x[:1][:num_node]) # fixed pos
-                    loss_rgr = net.recon_loss_rgr(predict=output[1:][:num_node], target=data.x[1:][:num_node])
-                    
-                    eval_loss_cls += loss_cls.item()
-                    eval_loss_rgr += loss_rgr.item()
+                    if args.mode == 'rstruc':
+                        loss_cls = net.recon_loss_cls(predict=output[:1][:num_node], target=data.x[:1][:num_node]) # fixed pos
+                        loss_rgr = net.recon_loss_rgr(predict=output[1:][:num_node], target=data.x[1:][:num_node])
+                        
+                        eval_loss_cls += loss_cls.item()
+                        eval_loss_rgr += loss_rgr.item()
 
-                if args.rs_loss_single is False and args.mode == 'rstruc': # Case: loss separated (multitask learning)
-                    loss = loss_cls + loss_rgr
-                else:
-                    loss = net.recon_loss(predict=output[:num_node], target=data.x[:num_node]) # Case: loss single, node only
-                    # loss = net.recon_loss(predict=output, target=data.x) # Case: loss single, node all
+                    if args.rs_loss_single is False and args.mode == 'rstruc': # Case: loss separated (multitask learning)
+                        loss = loss_cls + loss_rgr
+                    else:
+                        loss = net.recon_loss(predict=output[:num_node], target=data.x[:num_node]) # Case: loss single, node only
+                        # loss = net.recon_loss(predict=output, target=data.x) # Case: loss single, node all
 
-                eval_loss += loss.item()
+                    eval_loss += loss.item()
 
             if args.rs_sweep or args.wnb:
                 wandb.log({"loss": total_loss/len(train_loader),

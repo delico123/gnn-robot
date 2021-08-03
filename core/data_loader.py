@@ -9,8 +9,7 @@ import torch
 import torch_geometric
 from torch_geometric.data import DataLoader
 
-from core.model import build_rstruc_model
-from data.data_utils import adj_matrix_to_list, data_vis
+from core.data_utils import adj_matrix_to_list, data_vis
 
 
 """
