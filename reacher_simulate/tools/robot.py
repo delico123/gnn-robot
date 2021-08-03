@@ -21,13 +21,16 @@ class Reacher():
         self.NumJoints = p.getNumJoints(self.robot_id) #3
         for i in range(self.NumJoints):
             p.enableJointForceTorqueSensor(self.robot_id,i)
+        self.length = p.getLinkState(self.robot_id,self.NumJoints-1)[0][0]
+        self.ori = p.getLinkState(self.robot_id,self.NumJoints-1)[1]
 
     def move_pose(self):
-        joint_state=[]   
+        l = random.random()*self.length
+        angle = random.random()*PI
+        target = [l*math.cos(angle),l*math.sin(angle),0.025]
+        joint_state=p.calculateInverseKinematics(self.robot_id,self.NumJoints-1,target,self.ori)
         for i in range(self.NumJoints-1):
-            joint = 2*PI*(random.random()-PI)
-            p.setJointMotorControl2(self.robot_id,i,controlMode=p.POSITION_CONTROL,targetPosition=joint)
-            joint_state.append(joint)
+            p.setJointMotorControl2(self.robot_id,i,controlMode=p.POSITION_CONTROL,targetPosition=joint_state[i])
         for _ in range(10):
             p.stepSimulation()
         # print(p.getContactPoints(self.robot_id))
@@ -38,7 +41,7 @@ class Reacher():
         pos = p.getLinkState(self.robot_id,self.NumJoints-1)[0] 
         return joint_state, (pos[0],pos[1]),collsion
     
-    def get_current_pos():
+    def get_current_pos(self):
         pos = p.getLinkState(self.robot_id,self.NumJoints-1)[0]
         return [pos[0],pos[1]]
     

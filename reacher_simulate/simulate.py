@@ -7,7 +7,7 @@ from tools.save_logger import logger
 
 XML_DIR = './xml' # TODO
 
-def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, min_joint=2, max_joint=3):
+def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, min_joint=2, max_joint=7):
     """
     N: num_urdf
     """
@@ -22,12 +22,11 @@ def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, 
         
         if num_joint > max_joint or num_joint < min_joint:
             continue
-
+        print(num_joint)
         Logger = logger(path_idx=N, num_joint=num_joint)
         if str_only:
             """ Save structure only, no simulation, for each joint """
             Logger.save_json(f'{save_idx}-structure_only-j_{num_joint}')
-
         else: # simulate then save
             for idx in range(N):
                 print('simulating reacher_{}'.format(idx))
@@ -38,7 +37,7 @@ def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, 
                 MAX_RANGE=int(num_iter)
                 for j in range(MAX_RANGE):
                     #time.sleep(1)
-                    collision,joint_pos, pos,=reacher.move_pose()
+                    joint_pos, pos,collision=reacher.move_pose()
                     if collision ==False:
                         Logger.append_dynamics(joint_pos,pos)
                 Logger.save_dynamics(idx)
@@ -73,4 +72,4 @@ def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, 
 
 """ Test code """
 if __name__== '__main__':
-    simulate_p(N=2, num_iter=3) # N: urdf id, num_iter: simul step
+    simulate_p(N=5, num_iter=200) # N: urdf id, num_iter: simul step
