@@ -15,8 +15,8 @@ class logger():
         self.dynamics=[]
         self.save_structure(num_joint)
 
-    def append_dynamics(self,state,command,dp,pos,next_pos):
-        log={'state':state,'command':command,'dp':dp,'pos':pos,'next_pos':next_pos}
+    def append_dynamics(self,state,pos):
+        log={'state':state,'pos':pos}
         self.dynamics.append(log)
 
     def save_dynamics(self,idx=0):
@@ -31,7 +31,7 @@ class logger():
             self.memory.append({'structure':struct})
 
     def save_json(self,save):
-        PATH='./res/res_'+str(save)+'.json'
+        PATH='./res/motion/res_'+str(save)+'.json'
         with open(PATH,'w') as jf:
             json.dump(self.memory,jf,indent=4)
 
