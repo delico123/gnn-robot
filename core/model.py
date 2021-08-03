@@ -351,7 +351,7 @@ class FNET(nn.Module):
 
         # BCEWithLogitsLoss for c
 
-        return loss
+        return loss, loss_forward, loss_inverse
 
 def build_rstruc_model(args, feat=2, sweep_config=None):
     logging.info("build model..")

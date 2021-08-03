@@ -127,7 +127,10 @@ class Solver(nn.Module):
                 output = net.decode(z, args.node_padding, num_node, data.edge_index) # for debug
                 if args.log_save:
                     if epoch % 10 == 0:
-                        log_latent_epoch.append([num_node, data_set[0].x, data.x, output, z])
+                        if args.mode == "rstruc":
+                            log_latent_epoch.append([num_node, data.x, output, z])
+                        elif args.mode == "rmotion":
+                            log_latent_epoch.append([num_node, data_set[0].x, data.x, output, z])
 
                 if args.mode == 'rstruc':
                     loss_cls = net.recon_loss_cls(predict=output[:1][:num_node], target=data.x[:1][:num_node]) # fixed pos
@@ -161,8 +164,8 @@ class Solver(nn.Module):
                         data = data_set
                     elif args.mode == "rmotion":
                         data = data_set[1]
-                        if args.subtask == "inverse":
-                            data.x = data.s # 8
+                        # if args.subtask == "inverse":
+                        data.x = data.s # 8
                     else:
                         data = data_set[1]
 
@@ -172,7 +175,10 @@ class Solver(nn.Module):
                     output = net.decode(z, args.node_padding, num_node, data.edge_index)
                     if args.log_save:
                         if epoch % 10 == 0:
-                            eval_log_latent_epoch.append([num_node, data_set[0].x, data.x, output, z]) # TODO: struc case
+                            if args.mode == "rstruc":
+                                eval_log_latent_epoch.append([num_node, data.x, output, z])
+                            elif args.mode == "rmotion":
+                                eval_log_latent_epoch.append([num_node, data_set[0].x, data.x, output, z])
                     
                     if args.mode == 'rstruc':
                         loss_cls = net.recon_loss_cls(predict=output[:1][:num_node], target=data.x[:1][:num_node]) # fixed pos
@@ -270,6 +276,8 @@ class Solver(nn.Module):
             net.train()
 
             total_loss = 0
+            total_loss_f = 0
+            total_loss_i = 0
             recon_loss_m = 0
             log_latent_epoch = []
             for data_set in train_loader:
@@ -306,7 +314,7 @@ class Solver(nn.Module):
                         if epoch % 10 == 0:
                             log_latent_epoch.append([num_node, d_struc.x, d_motion.s, d_motion.p, d_motion.s, out_f, out_i, z_struc, z_motion])
                     
-                    loss = net.loss_multi(predict_f=out_f[:num_node], 
+                    loss, loss_forward, loss_inverse = net.loss_multi(predict_f=out_f[:num_node], 
                                             predict_i=out_i[:num_node],
                                             target_f=d_motion.p,
                                             target_i=d_motion.s[:num_node])
@@ -326,6 +334,9 @@ class Solver(nn.Module):
                     raise NotImplementedError
 
                 total_loss += loss.item()
+                total_loss_f += loss_forward.item()
+                total_loss_i += loss_inverse.item()
+
 
                 if epoch > 0:
                     loss.backward()
@@ -336,6 +347,8 @@ class Solver(nn.Module):
                 net.eval()
 
                 eval_loss = 0
+                eval_loss_f = 0
+                eval_loss_i = 0
                 eval_log_latent_epoch = []
                 for data_set in val_loader:
                     d_struc = data_set[0]
@@ -368,7 +381,7 @@ class Solver(nn.Module):
                             if epoch % 10 == 0:
                                 eval_log_latent_epoch.append([num_node, d_struc.x, d_motion.s, d_motion.p, d_motion.s, out_f, out_i, z_struc, z_motion])
                         
-                        loss = net.loss_multi(predict_f=out_f[:num_node], 
+                        loss, loss_forward, loss_inverse = net.loss_multi(predict_f=out_f[:num_node], 
                                                 predict_i=out_i[:num_node],
                                                 target_f=d_motion.p,
                                                 target_i=d_motion.s[:num_node])
@@ -377,11 +390,16 @@ class Solver(nn.Module):
                         raise NotImplementedError
 
                     eval_loss += loss.item()
-
+                    eval_loss_f += loss_forward.item()
+                    eval_loss_i += loss_inverse.item()
 
             if args.rs_sweep or args.wnb:
                 wandb.log({"loss": total_loss/len(train_loader),
+                            "loss_f": total_loss_f/len(train_loader),
+                            "loss_i": total_loss_i/len(train_loader),
                             "loss_val": eval_loss/len(val_loader),
+                            "loss_val_f": eval_loss_f/len(val_loader),
+                            "loss_val_i": eval_loss_i/len(val_loader),
                 })
 
             if epoch % args.log_per == 0:
