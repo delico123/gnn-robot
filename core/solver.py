@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import wandb
 
-from core.model import build_rstruc_model, build_full_model
+from core.model import build_recon_model, build_full_model
 from core.optimizer import get_optimizer
 
 
@@ -34,33 +34,36 @@ class Solver(nn.Module):
 
             # Define config
             config = wandb.config
-            
-            self.net_rs, config = build_rstruc_model(args, config)
-        
+
         else:
-            feat = 2 if args.subtask == 'forward' else 1  # (old forward)
+            config = None
+            
+        # Build model
+        feat = 2 if args.subtask == 'forward' else 1  # (old forward)
 
-            if args.mode == 'rstruc':
-                self.net_rs, config = build_rstruc_model(args)
-                self.nets = [self.net_rs]
-                self.conv = args.rs_conv
+        if args.mode == 'rstruc':
+            self.net_rs, config = build_recon_model(args, config)
+            self.nets = [self.net_rs]
+            self.conv = args.rs_conv
 
-            elif args.mode == 'rmotion':
-                self.net_rm, config = build_rstruc_model(args, feat=feat)
-                self.nets = [self.net_rm]
-                self.conv = args.rs_conv # TODO
+        elif args.mode == 'rmotion':
+            self.net_rm, config = build_recon_model(args, feat=feat, sweep_config=config)
+            self.nets = [self.net_rm]
+            self.conv = args.rs_conv # TODO
 
-            elif args.mode == 'train':
-                self.net_rs, config_rs = build_rstruc_model(args)
-                self.net_rm, config_rm = build_rstruc_model(args, feat=feat) # TODO
-                self.net_full, config = build_full_model(args) # partial full (only mlp)
-                self.nets = [self.net_full, self.net_rs, self.net_rm]
-                self.conv = args.rs_conv
+        elif args.mode == 'train':
+            self.net_rs, config_rs = build_recon_model(args, config)
+            self.net_rm, config_rm = build_recon_model(args, feat, config) # TODO
+            self.net_full, config = build_full_model(args, config) # partial full (only mlp)
+            self.nets = [self.net_full, self.net_rs, self.net_rm]
+            self.conv = args.rs_conv
 
-            else:
-                logging.warning(f"{args.mode}")
-                raise NotImplementedError
+        else:
+            logging.warning(f"{args.mode}")
+            raise NotImplementedError
 
+        # WnB regular
+        if not args.rs_sweep:
             if args.wnb:
                 # Init wandb run
                 # name, project, run
@@ -74,12 +77,13 @@ class Solver(nn.Module):
                                         'wnb_note':args.wnb_note})
 
                 # wandb magic
-                wandb.watch(self.nets, log_freq=100)
+                wandb.watch((*self.nets,), log_freq=100)
             
         # Optimizer
         self.optimizer = get_optimizer(args, config, self.nets)
 
         self.to(self.device)
+        
 
     def train_reconstruc(self, data_loader):
         """ train structure reconstruction model (rs)
@@ -125,7 +129,7 @@ class Solver(nn.Module):
                 z = net.encode(data.x, num_node, data.edge_index)
                 # output = net.decode(z, num_node, data.edge_index)
                 output = net.decode(z, args.node_padding, num_node, data.edge_index) # for debug
-                if args.log_save:
+                if args.save_latent:
                     if epoch % 10 == 0:
                         if args.mode == "rstruc":
                             log_latent_epoch.append([num_node, data.x, output, z])
@@ -173,7 +177,7 @@ class Solver(nn.Module):
 
                     z = net.encode(data.x, num_node, data.edge_index)
                     output = net.decode(z, args.node_padding, num_node, data.edge_index)
-                    if args.log_save:
+                    if args.save_latent:
                         if epoch % 10 == 0:
                             if args.mode == "rstruc":
                                 eval_log_latent_epoch.append([num_node, data.x, output, z])
@@ -209,7 +213,7 @@ class Solver(nn.Module):
                 logging.info(f"Epoch: {epoch}, Loss_val: {eval_loss/len(val_loader)}")
                 logging.info(f"Z: {z}, O: {output}, T:{data.x}")
 
-            if epoch % 10 == 0:
+            if epoch % 10 == 0 and args.save_latent:
                 log_latent.append({
                     'epoch': epoch,
                     'train_latent': log_latent_epoch,
@@ -226,7 +230,7 @@ class Solver(nn.Module):
         logging.info(f"Saving recon pretrained model.. {ppath}")
         torch.save(net.state_dict(), ppath)
 
-        if args.log_save:
+        if args.save_latent:
             import pickle
             pickle.dump(log_latent, open(f"./log/latent/pretrain-{args.mode}-{args.rs_conv}-{now.hour}{now.minute}.pkl", "wb"))
 
@@ -240,27 +244,20 @@ class Solver(nn.Module):
         if args.rs_conv == 'test_simple_decoder':
             # path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-1623.pth") # gt
             path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-gt-ls_8.pth") # gt
-            # if args.subtask == 'forward':
-            #     path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-205.pth") # gt forward
-            # elif args.subtask == 'inverse':
-            #     # path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-2116.pth") # gt inverse old
-            path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-test_simple_decoder-218.pth") # gt inverse
-            # else:
-                # NotImplementedError
+            if args.use_pre_rm:
+                path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-test_simple_decoder-218.pth") # gt inverse
 
         elif args.rs_conv=='tree':
             path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-ours-ls_8.pth") # ours
-        #     if args.subtask == 'forward':
-        #         path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-2030.pth") # ours forward (state + cmd)
-        #     elif args.subtask == 'inverse':
-            # path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-ours-inverse-ls_8.pth") # ours inverse (state)
-        #     else:
-        #         NotImplementedError
-            path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-tree-239.pth")
+            if args.use_pre_rm:
+                path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-tree-239.pth")
 
-        
+        else:
+            raise NotImplementedError
+
         self.net_rs.load_state_dict(torch.load(path_rs))
-        self.net_rm.load_state_dict(torch.load(path_rm))
+        if args.use_pre_rm:
+            self.net_rm.load_state_dict(torch.load(path_rm))
 
         net_rs = self.net_rs
         net_rm = self.net_rm
@@ -310,7 +307,7 @@ class Solver(nn.Module):
                     z_motion = net_rm.encode(d_motion.s, num_node, d_motion.edge_index)
                     
                     out_f, out_i = net(z_struc, z_motion, d_motion.p) # p: ee pos
-                    if args.log_save:
+                    if args.save_latent:
                         if epoch % 10 == 0:
                             log_latent_epoch.append([num_node, d_struc.x, d_motion.s, d_motion.p, d_motion.s, out_f, out_i, z_struc, z_motion])
                     
@@ -377,7 +374,7 @@ class Solver(nn.Module):
                         z_motion = net_rm.encode(d_motion.s, num_node, d_motion.edge_index)
                         
                         out_f, out_i = net(z_struc, z_motion, d_motion.p) # p: ee pos
-                        if args.log_save:
+                        if args.save_latent:
                             if epoch % 10 == 0:
                                 eval_log_latent_epoch.append([num_node, d_struc.x, d_motion.s, d_motion.p, d_motion.s, out_f, out_i, z_struc, z_motion])
                         
@@ -407,7 +404,7 @@ class Solver(nn.Module):
                 logging.info(f"Epoch: {epoch}, Loss_val: {eval_loss/len(val_loader)}")
                 logging.info(f"\nO: {out_f}|{out_i}\nT:{d_motion.p}|{d_motion.s}")
 
-            if epoch % 10 == 0:
+            if epoch % 10 == 0 and args.save_latent:
                 log_latent.append({
                     'epoch': epoch,
                     'train_latent': log_latent_epoch,
@@ -418,12 +415,12 @@ class Solver(nn.Module):
         # save model # TODO: ckpt
         if args.wnb:
             wandb.save(os.path.join(wandb.run.dir, 'model.h5'))
-        # dpath = "./log/train"
+        dpath = args.train_ckpt
         now = datetime.datetime.now()
-        # ppath = os.path.join(dpath, f"pretrain-{args.mode}-{args.rs_conv}-{now.hour}{now.minute}.pth")
-        # logging.info(f"Saving model.. {ppath}")
-        # torch.save(net.state_dict(), ppath)
+        ppath = os.path.join(dpath, f"pretrain-{args.mode}-{args.rs_conv}-{now.hour}{now.minute}.pth")
+        logging.info(f"Saving model.. {ppath}")
+        torch.save(net.state_dict(), ppath)
 
-        if args.log_save:
+        if args.save_latent:
             import pickle
             pickle.dump(log_latent, open(f"./log/latent/train-{args.mode}-{args.rs_conv}-{now.hour}{now.minute}.pkl", "wb"))

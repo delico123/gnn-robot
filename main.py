@@ -2,6 +2,7 @@ import os
 import logging
 import argparse
 import datetime
+from pathlib import Path
 
 import torch
 import wandb
@@ -133,6 +134,9 @@ if __name__ == '__main__':
     parser.add_argument('--rm_ckpt', type=str, default='log/rm',
                         help='checkpoint dir for rm')
 
+    parser.add_argument('--train_ckpt', type=str, default='log/train',
+                        help='checkpoint dir for train')
+
     # TEMP
     parser.add_argument('--rs_dnorm', action='store_true', default=False,
                         help='min 0.1, max0.4 norm')
@@ -154,8 +158,8 @@ if __name__ == '__main__':
     # log
     parser.add_argument('--log_per', type=int, default=10,
                         help='Log interval')
-    parser.add_argument('--log_save', action='store_true', default=False,
-                        help="T: save log file")
+    parser.add_argument('--save_latent', action='store_true', default=False,
+                        help="Save latent (per 10 epoch)")
     parser.add_argument('-d', '--debug',
                         action='store_const', dest='loglevel', const=logging.DEBUG,
                         default=logging.WARNING,
@@ -166,15 +170,24 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    Path(args.rs_ckpt).mkdir(parents=True, exist_ok=True)
+    Path(args.rm_ckpt).mkdir(parents=True, exist_ok=True)
+    Path(args.train_ckpt).mkdir(parents=True, exist_ok=True)
+
+    if args.save_latent:
+        Path("./log/logging/").mkdir(parents=True, exist_ok=True)
+        Path("./log/latent/").mkdir(parents=True, exist_ok=True)
     now = datetime.datetime.now()
     now = f"{now.hour}-{now.minute}"
-    log_file = f"./log/logging/{args.mode}-{args.rs_conv}-ls_{args.rs_latent}-{now}" if args.log_save else None
+    log_file = f"./log/logging/{args.mode}-{args.rs_conv}-ls_{args.rs_latent}-{now}" if args.save_latent else None
     logging.basicConfig(level=args.loglevel, filename=log_file)
+
 
 
     # W&B hyperparam sweep
     if args.rs_sweep or args.rs_sweep_short:
         logging.info("W&B SWEEP")
+        args.save_latent = False
         if args.wnb:
             logging.warning("W&B Sweep turned on, regular W&B igonored.")
             
@@ -204,7 +217,7 @@ if __name__ == '__main__':
                     # 'values': [0.0001]
                 },
                 'latent_size': {
-                    'values': [4, 8, 16]
+                    'values': [4, 8, 16, 64]
                     # 'values': [4, 8, 64]
                     # 'values': [4, 8, 64, 1024]
                 },

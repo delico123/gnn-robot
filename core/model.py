@@ -247,7 +247,7 @@ class ConcatEncoder(nn.Module):
 
 
 class SimpleDecoder(nn.Module):
-    def __init__(self, in_=16, latent=16, out_=16):
+    def __init__(self, in_=16, latent=16, out_=16, feat=2):
         super(SimpleDecoder, self).__init__()
         
         """
@@ -258,6 +258,7 @@ class SimpleDecoder(nn.Module):
         self.in_ = in_
         self.latent = latent
         self.out_ = out_
+        self.feat = feat
 
         self.lin1 = nn.Linear(in_, latent)
         self.lin2 = nn.Linear(latent, out_)
@@ -267,7 +268,7 @@ class SimpleDecoder(nn.Module):
         d = d.relu()
         d = self.lin2(d)
 
-        d = torch.reshape(d, (-1,2))
+        d = torch.reshape(d, (-1, self.feat))
 
         return d
 """"""
@@ -353,7 +354,7 @@ class FNET(nn.Module):
 
         return loss, loss_forward, loss_inverse
 
-def build_rstruc_model(args, feat=2, sweep_config=None):
+def build_recon_model(args, feat=2, sweep_config=None):
     logging.info("build model..")
     if args.rs_sweep:
         config = dict(sweep_config)
@@ -383,7 +384,9 @@ def build_rstruc_model(args, feat=2, sweep_config=None):
     elif args.rs_conv == "test_simple_decoder": #ground truth
         struc_tree_encoder = ConcatEncoder()
         struc_tree_decoder = SimpleDecoder(in_=feat*args.node_padding, # concated == 16
-                                        latent=latent_size)
+                                        latent=latent_size,
+                                        out_=feat*args.node_padding,
+                                        feat=feat)
 
     elif args.rs_conv == "tree_enc_simple_dec":
         struc_tree_encoder = StrucTreeEncoder(latent=latent_size,
@@ -402,13 +405,17 @@ def build_rstruc_model(args, feat=2, sweep_config=None):
     return net, config
 
 
-def build_full_model(args): # TODO: merge nets
-    config = {
-        'optimizer': args.opt,
-        'learning_rate': args.rs_lr,
-        'latent_size': args.rs_latent,
-        'opt_epsilon': args.opt_eps
-    }
+def build_full_model(args, sweep_config=None): # TODO: merge nets
+    logging.info("build fuill model..")
+    if args.rs_sweep:
+        config = dict(sweep_config)
+    else:
+        config = {
+            'optimizer': args.opt,
+            'learning_rate': args.rs_lr,
+            'latent_size': args.rs_latent,
+            'opt_epsilon': args.opt_eps
+        }
 
     if args.rs_conv == 'test_simple_decoder': # (gt)
         rs_size = 16 # TODO # Hard coded (gt) concate encoder
