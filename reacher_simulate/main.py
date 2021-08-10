@@ -18,6 +18,11 @@ parser.add_argument('--render', type=int, default=0, help='if want to render bul
 parser.add_argument('--str_only', action='store_true', help='create structure data only (no simulation)')
 parser.add_argument('--dyn_only', action='store_true', help='create dynamic data only, using existing urdf')
 
+parser.add_argument('--fix_len', action='store_true', help='fix length of reacher')
+
+parser.add_argument('--xml_dir', type=str, default='./xml', help="dir to save urdf")
+
+
 args = parser.parse_args()
 
 if args.dyn_only:
@@ -25,11 +30,11 @@ if args.dyn_only:
 else:
     print('making urdf file')
     for i in range(args.num_urdf):
-        make_reacher_urdf(i, args.min_njoint, args.max_njoint, args.min_link, args.max_link, args.str_only)
+        make_reacher_urdf(i, args.min_njoint, args.max_njoint, args.min_link, args.max_link, args.str_only, args.fix_len, args.xml_dir)
     print('made urdf file')
 
 print('run simulation')
-simulate_p(args.num_urdf,args.num_iter,args.max_pos,args.save_idx,args.render, args.str_only, args.min_njoint, args.max_njoint)
+simulate_p(args.num_urdf,args.num_iter,args.max_pos,args.save_idx,args.render, args.str_only, args.min_njoint, args.max_njoint, args.xml_dir)
 
 print('finished!')
 

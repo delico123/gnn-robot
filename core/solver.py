@@ -42,7 +42,7 @@ class Solver(nn.Module):
         feat = 2 if args.subtask == 'forward' else 1  # (old forward)
 
         if args.mode == 'rstruc':
-            self.net_rs, config = build_recon_model(args, config)
+            self.net_rs, config = build_recon_model(args, sweep_config=config)
             self.nets = [self.net_rs]
             self.conv = args.rs_conv
 
@@ -52,7 +52,7 @@ class Solver(nn.Module):
             self.conv = args.rs_conv # TODO
 
         elif args.mode == 'train':
-            self.net_rs, config_rs = build_recon_model(args, config)
+            self.net_rs, config_rs = build_recon_model(args, sweep_config=config)
             self.net_rm, config_rm = build_recon_model(args, feat, config) # TODO
             self.net_full, config = build_full_model(args, config) # partial full (only mlp)
             self.nets = [self.net_full, self.net_rs, self.net_rm]
@@ -138,7 +138,9 @@ class Solver(nn.Module):
 
                 if args.mode == 'rstruc':
                     loss_cls = net.recon_loss_cls(predict=output[:1][:num_node], target=data.x[:1][:num_node]) # fixed pos
+                    # loss_cls = net.recon_loss_cls(predict=output[:1], target=data.x[:1]) # fixed pos
                     loss_rgr = net.recon_loss_rgr(predict=output[1:][:num_node], target=data.x[1:][:num_node])
+                    # loss_rgr = net.recon_loss_rgr(predict=output[1:], target=data.x[1:])
                     
                     total_loss_cls += loss_cls.item()
                     total_loss_rgr += loss_rgr.item()
@@ -150,9 +152,9 @@ class Solver(nn.Module):
                     # loss = net.recon_loss(predict=output, target=data.x) # Case: loss single, node all
 
                 total_loss += loss.item()
-
-                loss.backward()
-                optimizer.step()
+                if epoch > 0:
+                    loss.backward()
+                    optimizer.step()
 
             # Eval
             # if eval_per
@@ -186,7 +188,9 @@ class Solver(nn.Module):
                     
                     if args.mode == 'rstruc':
                         loss_cls = net.recon_loss_cls(predict=output[:1][:num_node], target=data.x[:1][:num_node]) # fixed pos
+                        # loss_cls = net.recon_loss_cls(predict=output[:1], target=data.x[:1]) # fixed pos
                         loss_rgr = net.recon_loss_rgr(predict=output[1:][:num_node], target=data.x[1:][:num_node])
+                        # loss_rgr = net.recon_loss_rgr(predict=output[1:], target=data.x[1:])
                         
                         eval_loss_cls += loss_cls.item()
                         eval_loss_rgr += loss_rgr.item()
@@ -216,7 +220,7 @@ class Solver(nn.Module):
             if epoch % 10 == 0 and args.save_latent:
                 log_latent.append({
                     'epoch': epoch,
-                    'train_latent': log_latent_epoch,
+                    # 'train_latent': log_latent_epoch,
                     'val_latent': eval_log_latent_epoch,
 
                 })
@@ -241,23 +245,23 @@ class Solver(nn.Module):
         args = self.args
         net = self.nets[0] # self.net_full
 
-        if args.rs_conv == 'test_simple_decoder':
-            # path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-1623.pth") # gt
-            path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-gt-ls_8.pth") # gt
-            if args.use_pre_rm:
-                path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-test_simple_decoder-218.pth") # gt inverse
+        # if args.rs_conv == 'test_simple_decoder':
+        #     # path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-1623.pth") # gt
+        #     path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-gt-ls_8.pth") # gt
+        #     if args.use_pre_rm:
+        #         path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-test_simple_decoder-218.pth") # gt inverse
 
-        elif args.rs_conv=='tree':
-            path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-ours-ls_8.pth") # ours
-            if args.use_pre_rm:
-                path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-tree-239.pth")
+        # elif args.rs_conv=='tree':
+        #     path_rs = os.path.join(args.rs_ckpt, "pretrain-rstruc-ours-ls_8.pth") # ours
+        #     if args.use_pre_rm:
+        #         path_rm = os.path.join(args.rm_ckpt, "pretrain-rmotion-tree-239.pth")
 
-        else:
-            raise NotImplementedError
+        # else:
+        #     raise NotImplementedError
 
-        self.net_rs.load_state_dict(torch.load(path_rs))
-        if args.use_pre_rm:
-            self.net_rm.load_state_dict(torch.load(path_rm))
+        # self.net_rs.load_state_dict(torch.load(path_rs))
+        # if args.use_pre_rm:
+        #     self.net_rm.load_state_dict(torch.load(path_rm))
 
         net_rs = self.net_rs
         net_rm = self.net_rm
@@ -267,6 +271,7 @@ class Solver(nn.Module):
         logging.debug(f"train: {len(train_loader)}, val: {len(val_loader)}")
 
         log_latent = []
+        loss_scale = [1.0, 1.0]
 
         for epoch in range(args.rs_epoch+1):
             # Train
@@ -314,7 +319,8 @@ class Solver(nn.Module):
                     loss, loss_forward, loss_inverse = net.loss_multi(predict_f=out_f[:num_node], 
                                             predict_i=out_i[:num_node],
                                             target_f=d_motion.p,
-                                            target_i=d_motion.s[:num_node])
+                                            target_i=d_motion.s[:num_node],
+                                            scale=loss_scale)
 
                     # if args.loss_decoder:
                     #     # output_s = net_rs.decode(z_struc, args.node_padding, num_node, d_struc.edge_index)
@@ -333,11 +339,11 @@ class Solver(nn.Module):
                 total_loss += loss.item()
                 total_loss_f += loss_forward.item()
                 total_loss_i += loss_inverse.item()
-
-
                 if epoch > 0:
                     loss.backward()
                     optimizer.step()
+                elif epoch == 0:
+                    loss_scale = [loss_forward.item(), loss_inverse.item()]
 
             # Eval
             with torch.no_grad():
@@ -381,7 +387,8 @@ class Solver(nn.Module):
                         loss, loss_forward, loss_inverse = net.loss_multi(predict_f=out_f[:num_node], 
                                                 predict_i=out_i[:num_node],
                                                 target_f=d_motion.p,
-                                                target_i=d_motion.s[:num_node])
+                                                target_i=d_motion.s[:num_node],
+                                                scale=loss_scale)
                     
                     else:
                         raise NotImplementedError
@@ -407,7 +414,7 @@ class Solver(nn.Module):
             if epoch % 10 == 0 and args.save_latent:
                 log_latent.append({
                     'epoch': epoch,
-                    'train_latent': log_latent_epoch,
+                    # 'train_latent': log_latent_epoch,
                     'val_latent': eval_log_latent_epoch,
 
                 })

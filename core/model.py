@@ -342,13 +342,13 @@ class FNET(nn.Module):
 
         return loss
 
-    def loss_multi(self, predict_f, predict_i, target_f, target_i):
+    def loss_multi(self, predict_f, predict_i, target_f, target_i, scale):
         criterion = nn.L1Loss()
 
         loss_forward = criterion(predict_f.view(-1,1), target_f.view(-1,1))
         loss_inverse = criterion(predict_i.view(-1,1), target_i.view(-1,1))
 
-        loss = loss_forward + loss_inverse
+        loss = loss_forward / scale[0] + loss_inverse / scale[1]
 
         # BCEWithLogitsLoss for c
 

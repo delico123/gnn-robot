@@ -7,10 +7,11 @@ from tools.save_logger import logger
 
 XML_DIR = './xml' # TODO
 
-def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, min_joint=2, max_joint=7):
+def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, min_joint=2, max_joint=7, xml_dir=XML_DIR):
     """
     N: num_urdf
     """
+    XML_DIR = xml_dir
 
     # Simulate (after str_only)
     reacher=Reacher(render=render)
@@ -23,7 +24,7 @@ def simulate_p(N, num_iter, max_pos=1, save_idx=0, render=True, str_only=False, 
         if num_joint > max_joint or num_joint < min_joint:
             continue
         print(num_joint)
-        Logger = logger(path_idx=N, num_joint=num_joint)
+        Logger = logger(path_idx=N, num_joint=num_joint, xml_dir=xml_dir)
         if str_only:
             """ Save structure only, no simulation, for each joint """
             Logger.save_json(f'{save_idx}-structure_only-j_{num_joint}')

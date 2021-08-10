@@ -20,11 +20,13 @@ TODO:
 
 """
 
-def get_structure_loader(task='Reacher', eval_ratio=0, batch_size=16, node_padding=8, data_simple=False):
+def get_structure_loader(task='Reacher', eval_ratio=0, batch_size=16, node_padding=8, data_simple=False, temp_flag=False):
     logging.info("Reacher")
 
     if task is 'Reacher':
         data_path = 'reacher_simulate/res'
+        if temp_flag:
+            data_path = 'reacher_simulate/res_fix_half'
     else:
         raise NotImplementedError
 
@@ -53,11 +55,13 @@ def get_structure_loader(task='Reacher', eval_ratio=0, batch_size=16, node_paddi
     return train_loader, val_loader
 
 
-def get_motion_loader(task='Reacher', eval_ratio=0, batch_size=16, node_padding=8, data_simple=False):
+def get_motion_loader(task='Reacher', eval_ratio=0, batch_size=16, node_padding=8, data_simple=False, temp_flag=False):
     logging.info("Reacher")
 
     if task is 'Reacher':
         data_path = 'reacher_simulate/res/motion'
+        if temp_flag:
+            data_path = 'reacher_simulate/res_fix_half/motion'
     else:
         raise NotImplementedError
 

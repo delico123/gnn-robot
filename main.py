@@ -27,7 +27,8 @@ def main(args):
                                                      eval_ratio=args.eval_ratio,
                                                      batch_size=args.rs_bs,
                                                      node_padding=args.node_padding,
-                                                     data_simple=args.data_simple
+                                                     data_simple=args.data_simple,
+                                                     temp_flag=args.temp_flag
                                                      )
         # Train
         solver.train_reconstruc(structure_data_loader)
@@ -40,7 +41,8 @@ def main(args):
                                                      eval_ratio=args.eval_ratio,
                                                      batch_size=args.rs_bs,
                                                      node_padding=args.node_padding,
-                                                     data_simple=args.data_simple
+                                                     data_simple=args.data_simple,
+                                                     temp_flag=args.temp_flag
                                                      )
         # Train
         solver.train_reconstruc(structure_data_loader)
@@ -52,7 +54,8 @@ def main(args):
                                         eval_ratio=args.eval_ratio,
                                         batch_size=args.rs_bs,
                                         node_padding=args.node_padding,
-                                        data_simple=args.data_simple
+                                        data_simple=args.data_simple,
+                                        temp_flag=args.temp_flag
                                         )
         solver.train(data_loader)
         
@@ -63,6 +66,7 @@ def main(args):
     else:
         logging.warning(f"{args.mode}")
         raise NotImplementedError
+
 
 
 if __name__ == '__main__':
@@ -134,6 +138,8 @@ if __name__ == '__main__':
     parser.add_argument('--rm_ckpt', type=str, default='log/rm',
                         help='checkpoint dir for rm')
 
+    parser.add_argument('--use_pre_rm', action='store_true', default=False,
+                        help='Set True, then load pretrained rmotion.')
     parser.add_argument('--train_ckpt', type=str, default='log/train',
                         help='checkpoint dir for train')
 
@@ -142,6 +148,8 @@ if __name__ == '__main__':
                         help='min 0.1, max0.4 norm')
     parser.add_argument('--rs_rnn', action='store_true', default=False,
                         help='GGNN-like update, rnn')
+    parser.add_argument('--temp_flag', action='store_true', default=False,
+                        help='temp flag')
     
 
 
@@ -180,9 +188,13 @@ if __name__ == '__main__':
     now = datetime.datetime.now()
     now = f"{now.hour}-{now.minute}"
     log_file = f"./log/logging/{args.mode}-{args.rs_conv}-ls_{args.rs_latent}-{now}" if args.save_latent else None
-    logging.basicConfig(level=args.loglevel, filename=log_file)
-
-
+    # logging.basicConfig(level=args.loglevel, filename=log_file)
+    logging.basicConfig(level=args.loglevel, 
+                        handlers=[
+                                logging.FileHandler(log_file),
+                                logging.StreamHandler()
+                        ])
+                    
 
     # W&B hyperparam sweep
     if args.rs_sweep or args.rs_sweep_short:

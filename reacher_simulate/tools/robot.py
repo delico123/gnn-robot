@@ -26,7 +26,7 @@ class Reacher():
 
     def move_pose(self):
         l = random.random()*self.length
-        angle = random.random()*PI
+        angle = random.random()*PI*2
         target = [l*math.cos(angle),l*math.sin(angle),0.025]
         joint_state=p.calculateInverseKinematics(self.robot_id,self.NumJoints-1,target,self.ori)
         for i in range(self.NumJoints-1):
@@ -34,10 +34,10 @@ class Reacher():
         for _ in range(10):
             p.stepSimulation()
         # print(p.getContactPoints(self.robot_id))
-        if p.getContactPoints(self.robot_id) == ():
-            collsion= False
-        else:
-            collsion = True
+        # if p.getContactPoints(self.robot_id) == ():
+        collsion= False
+        # else:
+            # collsion = True
         pos = p.getLinkState(self.robot_id,self.NumJoints-1)[0] 
         return joint_state, (pos[0],pos[1]), collsion
     
