@@ -24,6 +24,13 @@ class Reacher():
         self.length = p.getLinkState(self.robot_id,self.NumJoints-1)[0][0]
         self.ori = p.getLinkState(self.robot_id,self.NumJoints-1)[1]
 
+    def infer_load(self, urdf_path):
+        # PATH='./xml/reacher_'+str(path_idx)+'.urdf' # Modified: receive urdf path explicitly (path_idx -> urdf_path)
+        PATH = urdf_path
+
+        self.robot_id_infer=p.loadURDF(PATH,useFixedBase=True,basePosition=[3,0,0],
+                                        flags=p.URDF_USE_SELF_COLLISION) #0
+
     def move_pose(self):
         l = random.random()*self.length
         angle = random.random()*PI*2
@@ -31,7 +38,7 @@ class Reacher():
         joint_state=p.calculateInverseKinematics(self.robot_id,self.NumJoints-1,target,self.ori)
         for i in range(self.NumJoints-1):
             p.setJointMotorControl2(self.robot_id,i,controlMode=p.POSITION_CONTROL,targetPosition=joint_state[i])
-        for _ in range(10):
+        for _ in range(50):
             p.stepSimulation()
         # print(p.getContactPoints(self.robot_id))
         # if p.getContactPoints(self.robot_id) == ():
@@ -45,10 +52,11 @@ class Reacher():
         pos = p.getLinkState(self.robot_id,self.NumJoints-1)[0]
         return [pos[0],pos[1]]
     
-    def move_joint(self,joints):
+    def move_joint(self,motion):
         for i in range(self.NumJoints-1):
-            p.setJointMotorControl2(self.robot_id,i,controlMode=p.POSITION_CONTROL,targetPosition=joints[i])
-        for _ in range(10):
+            p.setJointMotorControl2(self.robot_id,i,controlMode=p.POSITION_CONTROL,targetPosition=motion[0][i,0])
+            p.setJointMotorControl2(self.robot_id,i,controlMode=p.POSITION_CONTROL,targetPosition=motion[1][i,0])
+        for _ in range(50):
             p.stepSimulation()
     
     def make_maker(self,dp):

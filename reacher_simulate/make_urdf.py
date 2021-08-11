@@ -49,21 +49,21 @@ def make_reacher_urdf(save_index, min_njoint=2, max_njoint=3, MIN=0.1, MAX=0.4, 
     else:
         robot.save(os.path.join(XML_DIR, 'reacher_'+str(save_index)+'.urdf'))
     
-def make_test_urdf(num_joint,link):
+def make_test_urdf(num_joint,link,flip):
     links=[]
     joints=[]
     l,j=get_base()
     links.append(l)
     joints.append(j)
     for i in range(num_joint):
-        l,j=get_link_joint(link[i],i)
+        l,j=get_link_joint(link[i],i,flip)
         links.append(l)
         joints.append(j)
     temp=get_ee(num_joint)
     links.append(temp)
     #for i,joint1 in enumerate(robot.joints):
     robot=urdfpy.URDF('pybullet_reacher_robot',links,joints)
-    robot.save(os.path.join(XML_DIR, 'reacher_infer.urdf'))
+    robot.save(os.path.join(XML_DIR, 'reacher_infer_{}.urdf'.format(flip)))
 
 """ Test code """
 

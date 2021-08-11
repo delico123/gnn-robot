@@ -23,16 +23,23 @@ def get_base():
     
     return base_link,base_joint
 
-def get_link_joint(random_length,index):
+def get_link_joint(random_length,index,flip=False):
     cyc=urdfpy.Cylinder(0.015,random_length)
     geometry=urdfpy.Geometry(cylinder=cyc)
-
-    if index==0:
-        material=urdfpy.Material('blue',color=(0,0,0.8,1))
-    elif index==1:
-        material=urdfpy.Material('sky',color=(0,0.8,0.8,1))
+    if flip==False: 
+        if index%3==0:
+            material=urdfpy.Material('blue',color=(0,0,0.8,1))
+        elif index%3==1:
+            material=urdfpy.Material('sky',color=(0,0.8,0.8,1))
+        else:
+            material=urdfpy.Material('green',color=(0,0.8,0,1))
     else:
-        material=urdfpy.Material('green',color=(0,0.8,0,1))
+        if index%3==0:
+            material=urdfpy.Material('red',color=(0.8,0,1,1))
+        elif index%3==1:
+            material=urdfpy.Material('pink',color=(0.6,0.0,0.2,1))
+        else:
+            material=urdfpy.Material('orange',color=(0.6,0.2,0,1))
     
     origin=((0,0,1,random_length/2),(0,1,0,0),(-1,0,0,0),(0,0,0,1))
     base_visual=urdfpy.Visual(geometry,material=material,origin=origin)

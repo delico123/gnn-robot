@@ -22,82 +22,82 @@
   </link>
   <link name="link1">
     <inertial>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.004590034484863281 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
       <mass value="1.0"/>
       <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
     </inertial>
     <visual>
       <geometry>
-        <cylinder radius="0.015" length="0.0"/>
+        <cylinder radius="0.015" length="0.009180068969726562"/>
       </geometry>
-      <material name="blue"/>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <material name="red"/>
+      <origin xyz="0.004590034484863281 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.015" length="0.0"/>
+        <cylinder radius="0.015" length="0.009180068969726562"/>
       </geometry>
-      <origin xyz="0.0 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.004590034484863281 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </collision>
   </link>
   <link name="link2">
     <inertial>
-      <origin xyz="0.1703 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.002054274082183838 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
       <mass value="1.0"/>
       <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
     </inertial>
     <visual>
       <geometry>
-        <cylinder radius="0.015" length="0.3406"/>
+        <cylinder radius="0.015" length="0.004108548164367676"/>
       </geometry>
-      <material name="sky"/>
-      <origin xyz="0.1703 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <material name="pink"/>
+      <origin xyz="0.002054274082183838 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.015" length="0.3406"/>
+        <cylinder radius="0.015" length="0.004108548164367676"/>
       </geometry>
-      <origin xyz="0.1703 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.002054274082183838 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </collision>
   </link>
   <link name="link3">
     <inertial>
-      <origin xyz="0.12745 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.0013786554336547852 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
       <mass value="1.0"/>
       <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
     </inertial>
     <visual>
       <geometry>
-        <cylinder radius="0.015" length="0.2549"/>
+        <cylinder radius="0.015" length="0.0027573108673095703"/>
       </geometry>
-      <material name="green"/>
-      <origin xyz="0.12745 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <material name="orange"/>
+      <origin xyz="0.0013786554336547852 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.015" length="0.2549"/>
+        <cylinder radius="0.015" length="0.0027573108673095703"/>
       </geometry>
-      <origin xyz="0.12745 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.0013786554336547852 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </collision>
   </link>
   <link name="link4">
     <inertial>
-      <origin xyz="0.15475 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.0004957914352416992 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
       <mass value="1.0"/>
       <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
     </inertial>
     <visual>
       <geometry>
-        <cylinder radius="0.015" length="0.3095"/>
+        <cylinder radius="0.015" length="0.0009915828704833984"/>
       </geometry>
-      <material name="green"/>
-      <origin xyz="0.15475 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <material name="red"/>
+      <origin xyz="0.0004957914352416992 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.015" length="0.3095"/>
+        <cylinder radius="0.015" length="0.0009915828704833984"/>
       </geometry>
-      <origin xyz="0.15475 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
+      <origin xyz="0.0004957914352416992 0.0 0.0" rpy="0.0 1.5707963267948966 0.0"/>
     </collision>
   </link>
   <link name="link5">
@@ -132,42 +132,39 @@
     <parent link="link1"/>
     <child link="link2"/>
     <axis xyz="0. 0. 1."/>
-    <origin xyz="0.0 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+    <origin xyz="0.009180068969726562 0.0 0.0" rpy="0.0 -0.0 0.0"/>
   </joint>
   <joint name="joint3" type="revolute">
     <limit effort="300.0" velocity="200.0" lower="-2.96705" upper="2.96705"/>
     <parent link="link2"/>
     <child link="link3"/>
     <axis xyz="0. 0. 1."/>
-    <origin xyz="0.3406 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+    <origin xyz="0.004108548164367676 0.0 0.0" rpy="0.0 -0.0 0.0"/>
   </joint>
   <joint name="joint4" type="revolute">
     <limit effort="300.0" velocity="200.0" lower="-2.96705" upper="2.96705"/>
     <parent link="link3"/>
     <child link="link4"/>
     <axis xyz="0. 0. 1."/>
-    <origin xyz="0.2549 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+    <origin xyz="0.0027573108673095703 0.0 0.0" rpy="0.0 -0.0 0.0"/>
   </joint>
   <joint name="joint5" type="revolute">
     <limit effort="300.0" velocity="200.0" lower="-2.96705" upper="2.96705"/>
     <parent link="link4"/>
     <child link="link5"/>
     <axis xyz="0. 0. 1."/>
-    <origin xyz="0.3095 0.0 0.0" rpy="0.0 -0.0 0.0"/>
+    <origin xyz="0.0009915828704833984 0.0 0.0" rpy="0.0 -0.0 0.0"/>
   </joint>
   <material name="yellow">
     <color rgba="0.8 0.8 0.  1. "/>
   </material>
-  <material name="blue">
-    <color rgba="0.  0.  0.8 1. "/>
-  </material>
-  <material name="sky">
-    <color rgba="0.  0.8 0.8 1. "/>
-  </material>
-  <material name="green">
-    <color rgba="0.  0.8 0.  1. "/>
-  </material>
   <material name="red">
-    <color rgba="0.8 0.  0.  1. "/>
+    <color rgba="0.8 0.  1.  1. "/>
+  </material>
+  <material name="pink">
+    <color rgba="0.6 0.  0.2 1. "/>
+  </material>
+  <material name="orange">
+    <color rgba="0.6 0.2 0.  1. "/>
   </material>
 </robot>

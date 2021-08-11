@@ -11,22 +11,21 @@ from tools.robot import Reacher
 # log_dir = "./log/latent"
 log_dir = "./render_resource"
 
-def simul_result_struc(robot_pkl='./result_data_struc.pkl'):
+def simul_result(robot_pkl='./result_data_struc.pkl'):
     robot = Reacher(render=True)
     n_jointss, links, motions = pickle.load(open(os.path.join(log_dir, robot_pkl), 'rb'))
-
-    for link, n_joints, motion in zip(links, n_jointss, motions):
+    flip = 0
+    for link, n_joints in zip(links, n_jointss):
         link = np.asarray(link)[1:,1]
-
-        make_test_urdf(n_joints, link)
-
-        robot.load('./xml/reacher_infer.urdf')
-
-        # TODO: motion pos. note: rstruc case, motion <- None
-        # break
-
-    # robot.close()
+        make_test_urdf(n_joints,link,flip)
+        flip +=1
+    # TODO: motion pos. note: rstruc case, motion <- None
+    robot.load('./xml/reacher_infer_0.urdf')
+    robot.infer_load('./xml/reacher_infer_1.urdf')
+    time.sleep(2)
+    robot.move_joint(motions)
     time.sleep(100)
+    robot.close()
 
 
 def test():
@@ -94,8 +93,11 @@ def latent_pkl2df(pkl_path="pretrain-rstruc-tree", epoch_idx=-1, mode="rstruc"):
 
     
 if __name__== '__main__':
-    latent_pkl2df()
-    df2robot(111, robot_pkl='test-result_struc.pkl')
-    simul_result_struc(robot_pkl='test-result_struc.pkl')
+    # latent_pkl2df()
+    # df2robot(111, robot_pkl='test-result_struc.pkl')
+    # simul_result(robot_pkl='test-result_struc.pkl')
+    latent_pkl2df("pretrain-rmotion-tree",mode='rmotion')
+    df2robot(111, df = "pretrain-rmotion-tree-df.pkl" ,robot_pkl='test-result_motion.pkl')
+    simul_result(robot_pkl='test-result_motion.pkl')
 
     # test()
