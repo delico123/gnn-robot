@@ -2,6 +2,8 @@ import pybullet as p
 import time
 import random
 import math
+import numpy as np
+
 PI = math.pi
 class Reacher():
     def __init__(self,render=True,infer=False):
@@ -12,6 +14,14 @@ class Reacher():
         self.pyscis=p.connect(self.RENDER)
         self.inference_phase = infer
         p.setGravity(0,0,-9.8)
+        self.width = 720
+        self.height = 720
+        self.fov = 40
+        self.aspect = self.width / self.height
+        self.near = 0.2
+        self.far = 10
+        self.view_matrix = p.computeViewMatrix([0.0, 0, 4.0], [0, .0, -1], [1, 0, 0])
+        self.projection_matrix = p.computeProjectionMatrixFOV(self.fov, self.aspect, self.near, self.far)
         
     def load(self, urdf_path):
         # PATH='./xml/reacher_'+str(path_idx)+'.urdf' # Modified: receive urdf path explicitly (path_idx -> urdf_path)
@@ -28,7 +38,7 @@ class Reacher():
         # PATH='./xml/reacher_'+str(path_idx)+'.urdf' # Modified: receive urdf path explicitly (path_idx -> urdf_path)
         PATH = urdf_path
 
-        self.robot_id_infer=p.loadURDF(PATH,useFixedBase=True,basePosition=[3,0,0],
+        self.robot_id_infer=p.loadURDF(PATH,useFixedBase=True,basePosition=[0,0,0],
                                         flags=p.URDF_USE_SELF_COLLISION) #0
 
     def move_pose(self):
@@ -64,6 +74,11 @@ class Reacher():
         base = [pos[0]+dp[0],pos[1]+dp[1],pos[2]]
         if self.inference_phase:
             self.maker_id = p.loadURDF('./xml/marker.urdf',base)
+    def get_camera(self):
+        projection_matrix = p.computeProjectionMatrixFOV(self.fov, self.aspect, self.near, self.far)
+        images = p.getCameraImage(self.width,self.height,self.view_matrix,projection_matrix,shadow=True,renderer=p.ER_BULLET_HARDWARE_OPENGL)
+        rgb_opengl = np.reshape(images[2], (self.height, self.width, 4))
+        return rgb_opengl[:,:,:3]
 
     def close(self):
         p.resetSimulation()

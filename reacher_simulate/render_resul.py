@@ -7,6 +7,7 @@ import pandas as pd
 
 from make_urdf import make_test_urdf
 from tools.robot import Reacher
+import matplotlib.pyplot as plt
 
 # log_dir = "./log/latent"
 log_dir = "./render_resource"
@@ -22,9 +23,14 @@ def simul_result(robot_pkl='./result_data_struc.pkl'):
     # TODO: motion pos. note: rstruc case, motion <- None
     robot.load('./xml/reacher_infer_0.urdf')
     robot.infer_load('./xml/reacher_infer_1.urdf')
-    time.sleep(2)
+    time.sleep(0.01)
     robot.move_joint(motions)
-    time.sleep(100)
+    img = robot.get_camera()
+    img = np.asarray(img)/255.0
+    plt.imshow(img)
+    plt.savefig("testshot.png")
+    plt.axis('off')
+    time.sleep(0.5)
     robot.close()
 
 
