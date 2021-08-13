@@ -230,8 +230,6 @@ class TreeConv(MessagePassing): # TODO: Generalize
             # logging.debug(edge_index)
             # logging.debug(x)
             h = self.propagate(edge_index=edge_index, x=x, h=h.clone(), fn_m=fn_m, fn_u=fn_u)
-            if self.gru_update:
-                fn_u[1] = h
             # h[edge_index[1]] = h_updated[edge_index[1]]
         return h
         
@@ -254,7 +252,7 @@ class TreeConv(MessagePassing): # TODO: Generalize
         """ pop_first == True """
         if self.gru_update:
             h_updated = fn_u[0](torch.cat([x, m], dim=1), fn_u[1])
-            # fn_u[1] = h_updated
+            fn_u[1] = h_updated
         else:
             h_updated = fn_u(torch.cat([x, m], dim=1))
         h[edge_index_i] = h_updated[edge_index_i]
