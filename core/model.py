@@ -70,7 +70,7 @@ class STAE(nn.Module):
 
 
 class StrucTreeEncoder(nn.Module): # N/A
-    def __init__(self, in_=2, latent=16, out_=16, conv='tree', gru_update='False'):
+    def __init__(self, in_=2, latent=16, out_=16, conv='tree', gru_update=False):
         super(StrucTreeEncoder, self).__init__()
         """
         in_: int
@@ -87,7 +87,7 @@ class StrucTreeEncoder(nn.Module): # N/A
 
 
 class StrucTreeDecoder(nn.Module):
-    def __init__(self, in_=16, latent=16, out_=2, gru_update='False'):
+    def __init__(self, in_=16, latent=16, out_=2, gru_update=False, gru_readout=False):
         # out_: number of features for each node
         super(StrucTreeDecoder, self).__init__()
 
@@ -99,6 +99,10 @@ class StrucTreeDecoder(nn.Module):
         self.readout = nn.Linear(latent, out_)
         # self.readout_sig = nn.Linear(latent, out_)
         # self.readout_lin = nn.Linear(latent, out_)
+
+        # self.gru_readout = gru_readout
+        # if gru_readout:
+        #     self.readout = nn.GRU
 
     def forward(self, z, node_max, num_node, edge_index):
         # logging.debug("Decoding..")
@@ -182,6 +186,10 @@ class TreeConv(MessagePassing): # TODO: Generalize
         return down_ei, up_ei
 
     def forward(self, x, edge_index, num_node=8):
+        if self.gru_update:
+            self.update_down[1] = None
+            self.update_up[1] = None
+
         # Edges
         down_ei, up_ei = self._organize_edges(edge_index, num_node)
         # Node vectors
@@ -195,10 +203,6 @@ class TreeConv(MessagePassing): # TODO: Generalize
         self.loc_msg = False
         x = self.propagate_oneway(up_ei, x, self.message_up, self.update_up)
         # raise NotImplementedError
-
-        if self.gru_update:
-            self.update_down[1] = None
-            self.update_up[1] = None
 
         return x
 
@@ -384,11 +388,13 @@ def build_recon_model(args, feat=2, sweep_config=None):
             'learning_rate': args.rs_lr,
             'latent_size': args.rs_latent,
             'opt_epsilon': args.opt_eps,
-            'gru_update': args.gru_update
+            'gru_update': args.gru_update,
+            'gru_readout': args.gru_readout
         }
 
     latent_size = config['latent_size']
     gru_update = config['gru_update']
+    gru_readout = config['gru_readout']
 
     if args.rs_conv == "tree":
         struc_tree_encoder = StrucTreeEncoder(in_=feat, #Hard coded
@@ -399,14 +405,16 @@ def build_recon_model(args, feat=2, sweep_config=None):
         struc_tree_decoder = StrucTreeDecoder(in_=latent_size,
                                             latent=latent_size,
                                             out_=feat,
-                                            gru_update=gru_update
+                                            gru_update=gru_update,
+                                            gru_readout=gru_readout
                                             )
     elif args.rs_conv == "test_decoder":
         struc_tree_encoder = ConcatEncoder()
         struc_tree_decoder = StrucTreeDecoder(in_=16, # concated == 16
                                         latent=latent_size,
                                         out_=2,
-                                        gru_update=gru_update
+                                        gru_update=gru_update,
+                                        gru_readout=gru_readout
                                         ) # node feat to recon
 
     elif args.rs_conv == "test_simple_decoder": #ground truth
@@ -414,18 +422,15 @@ def build_recon_model(args, feat=2, sweep_config=None):
         struc_tree_decoder = SimpleDecoder(in_=feat*args.node_padding, # concated == 16
                                         latent=latent_size,
                                         out_=feat*args.node_padding,
-                                        feat=feat,
-                                        gru_update=gru_update
+                                        feat=feat
                                         )
 
     elif args.rs_conv == "tree_enc_simple_dec":
         struc_tree_encoder = StrucTreeEncoder(latent=latent_size,
-                                            out_=latent_size,
-                                            gru_update=gru_update
+                                            out_=latent_size
                                             )
         struc_tree_decoder = SimpleDecoder(in_=latent_size,
-                                        latent=latent_size,
-                                        gru_update=gru_update
+                                        latent=latent_size
                                         )
     
     else:

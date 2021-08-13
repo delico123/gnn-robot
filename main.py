@@ -148,6 +148,9 @@ if __name__ == '__main__':
                         help='min 0.1, max0.4 norm')
     parser.add_argument('--gru_update', action='store_true', default=False,
                         help='GGNN-like update, rnn')
+    parser.add_argument('--gru_readout', action='store_true', default=False,
+                        help='gru readout')
+
     parser.add_argument('--temp_flag', action='store_true', default=False,
                         help='temp flag')
     
