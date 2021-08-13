@@ -146,7 +146,7 @@ if __name__ == '__main__':
     # TEMP
     parser.add_argument('--rs_dnorm', action='store_true', default=False,
                         help='min 0.1, max0.4 norm')
-    parser.add_argument('--rs_rnn', action='store_true', default=False,
+    parser.add_argument('--gru_update', action='store_true', default=False,
                         help='GGNN-like update, rnn')
     parser.add_argument('--temp_flag', action='store_true', default=False,
                         help='temp flag')
@@ -187,7 +187,7 @@ if __name__ == '__main__':
         Path("./log/latent/").mkdir(parents=True, exist_ok=True)
     now = datetime.datetime.now()
     now = f"{now.hour}-{now.minute}"
-    log_file = f"./log/logging/{args.mode}-{args.rs_conv}-ls_{args.rs_latent}-{now}" if args.save_latent else None
+    log_file = f"./log/logging/{args.mode}-{args.rs_conv}-ls_{args.rs_latent}-{now}"
     # logging.basicConfig(level=args.loglevel, filename=log_file)
     logging.basicConfig(level=args.loglevel, 
                         handlers=[

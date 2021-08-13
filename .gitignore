@@ -20,3 +20,15 @@ __pycache__
 
 xml/
 log/
+
+.gitignore
+gitcommitmemo
+
+### data generated ###
+res/
+xml/
+
+*/xml_fix*
+
+script_rstruc.sh
+

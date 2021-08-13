@@ -27,7 +27,8 @@ class Solver(nn.Module):
                 'optimizer': args.opt,
                 'learning_rate': args.rs_lr,
                 'latent_size': args.rs_latent,
-                'opt_epsilon': args.opt_eps
+                'opt_epsilon': args.opt_eps,
+                'gru_update': args.gru_update
             }
             # Init each wandb run
             wandb.init(config=config_defaults)
@@ -146,7 +147,7 @@ class Solver(nn.Module):
                     total_loss_rgr += loss_rgr.item()
 
                 if args.rs_loss_single is False and args.mode == 'rstruc': # Case: loss separated (multitask learning)
-                    loss = loss_cls + loss_rgr
+                    loss = 0.3 * loss_cls + loss_rgr
                 else:
                     loss = net.recon_loss(predict=output[:num_node], target=data.x[:num_node]) # Case: loss single, node only
                     # loss = net.recon_loss(predict=output, target=data.x) # Case: loss single, node all

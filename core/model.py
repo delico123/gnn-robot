@@ -70,13 +70,13 @@ class STAE(nn.Module):
 
 
 class StrucTreeEncoder(nn.Module): # N/A
-    def __init__(self, in_=2, latent=16, out_=16, conv='tree'):
+    def __init__(self, in_=2, latent=16, out_=16, conv='tree', gru_update='False'):
         super(StrucTreeEncoder, self).__init__()
         """
         in_: int
             len(data.x)
         """
-        self.tree_encoder = TreeConv(in_, latent, latent) # TODO: split latent and out_
+        self.tree_encoder = TreeConv(in_, latent, latent, gru_update=gru_update) # TODO: split latent and out_
 
     def forward(self, x, num_node, edge_index):
         # logging.info("Encoding..")
@@ -87,7 +87,7 @@ class StrucTreeEncoder(nn.Module): # N/A
 
 
 class StrucTreeDecoder(nn.Module):
-    def __init__(self, in_=16, latent=16, out_=2):
+    def __init__(self, in_=16, latent=16, out_=2, gru_update='False'):
         # out_: number of features for each node
         super(StrucTreeDecoder, self).__init__()
 
@@ -95,7 +95,7 @@ class StrucTreeDecoder(nn.Module):
         in_: int
             len(z)
         """
-        self.tree_decoder = TreeConv(in_, latent, latent)
+        self.tree_decoder = TreeConv(in_, latent, latent, gru_update=gru_update)
         self.readout = nn.Linear(latent, out_)
         # self.readout_sig = nn.Linear(latent, out_)
         # self.readout_lin = nn.Linear(latent, out_)
@@ -124,7 +124,7 @@ class StrucTreeDecoder(nn.Module):
 #     bound = 1.0 / math.sqrt(size)
 #     tensor.data.uniform_(-bound, bound)
 class TreeConv(MessagePassing): # TODO: Generalize
-    def __init__(self, in_=2, out_=16, latent=16, loc_msg=False):
+    def __init__(self, in_=2, out_=16, latent=16, loc_msg=False, gru_update=False):
         """
         (down==spread==root->leaf, up==collect==l->r)
 
@@ -156,11 +156,17 @@ class TreeConv(MessagePassing): # TODO: Generalize
                                     nn.Sigmoid())
     
         # update fn
-        self.update_down = nn.Sequential(nn.Linear(in_+_msg_down, _lnt_down),
-        # self.update_down = nn.Sequential(nn.Linear(in_+_msg_down+8, _lnt_down),
-                                    nn.Sigmoid())
-        self.update_up = nn.Sequential(nn.Linear(_lnt_down+_msg_up, _lnt_up),
-                                    nn.Sigmoid())
+        self.gru_update = gru_update
+        if gru_update: # [FN, hstate]
+            self.update_down = [nn.GRUCell(in_+_msg_down, _lnt_down), None]
+            self.update_up = [nn.GRUCell(_lnt_down+_msg_up, _lnt_up), None]
+            # TODO: test torch.randn rather than None
+        else:
+            self.update_down = [nn.Sequential(nn.Linear(in_+_msg_down, _lnt_down),
+            # self.update_down = nn.Sequential(nn.Linear(in_+_msg_down+8, _lnt_down),
+                                        nn.Sigmoid())]
+            self.update_up = [nn.Sequential(nn.Linear(_lnt_down+_msg_up, _lnt_up),
+                                        nn.Sigmoid())]
 
 
     def _organize_edges(self, edge_index, num_node):
@@ -190,6 +196,10 @@ class TreeConv(MessagePassing): # TODO: Generalize
         x = self.propagate_oneway(up_ei, x, self.message_up, self.update_up)
         # raise NotImplementedError
 
+        if self.gru_update:
+            self.update_down[1] = None
+            self.update_up[1] = None
+
         return x
 
     def propagate_oneway(self, edge_indices, x, fn_m, fn_u):
@@ -206,12 +216,18 @@ class TreeConv(MessagePassing): # TODO: Generalize
         #     mmm = torch.zeros(8)
         #     mmm = mmm.repeat(x.shape[0], 1)
         #     h = torch.cat([h, mmm], dim=1)
-        h = fn_u(h)
+        if self.gru_update:
+            h = fn_u[0](h, fn_u[1])
+            fn_u[1] = h
+        else:
+            h = fn_u[0](h)
 
         for edge_index in edge_indices:
             # logging.debug(edge_index)
             # logging.debug(x)
             h = self.propagate(edge_index=edge_index, x=x, h=h.clone(), fn_m=fn_m, fn_u=fn_u)
+            if self.gru_update:
+                fn_u[1] = h
             # h[edge_index[1]] = h_updated[edge_index[1]]
         return h
         
@@ -232,7 +248,11 @@ class TreeConv(MessagePassing): # TODO: Generalize
 
     def update(self, m, x, h, fn_u, edge_index_i):
         """ pop_first == True """
-        h_updated = fn_u(torch.cat([x, m], dim=1))
+        if self.gru_update:
+            h_updated = fn_u[0](torch.cat([x, m], dim=1), fn_u[1])
+            # fn_u[1] = h_updated
+        else:
+            h_updated = fn_u(torch.cat([x, m], dim=1))
         h[edge_index_i] = h_updated[edge_index_i]
         return h
 
@@ -363,36 +383,50 @@ def build_recon_model(args, feat=2, sweep_config=None):
             'optimizer': args.opt,
             'learning_rate': args.rs_lr,
             'latent_size': args.rs_latent,
-            'opt_epsilon': args.opt_eps
+            'opt_epsilon': args.opt_eps,
+            'gru_update': args.gru_update
         }
 
     latent_size = config['latent_size']
+    gru_update = config['gru_update']
 
     if args.rs_conv == "tree":
         struc_tree_encoder = StrucTreeEncoder(in_=feat, #Hard coded
                                             latent=latent_size,
-                                            out_=latent_size)
+                                            out_=latent_size,
+                                            gru_update=gru_update
+                                            )
         struc_tree_decoder = StrucTreeDecoder(in_=latent_size,
                                             latent=latent_size,
-                                            out_=feat)
+                                            out_=feat,
+                                            gru_update=gru_update
+                                            )
     elif args.rs_conv == "test_decoder":
         struc_tree_encoder = ConcatEncoder()
         struc_tree_decoder = StrucTreeDecoder(in_=16, # concated == 16
                                         latent=latent_size,
-                                        out_=2) # node feat to recon
+                                        out_=2,
+                                        gru_update=gru_update
+                                        ) # node feat to recon
 
     elif args.rs_conv == "test_simple_decoder": #ground truth
         struc_tree_encoder = ConcatEncoder()
         struc_tree_decoder = SimpleDecoder(in_=feat*args.node_padding, # concated == 16
                                         latent=latent_size,
                                         out_=feat*args.node_padding,
-                                        feat=feat)
+                                        feat=feat,
+                                        gru_update=gru_update
+                                        )
 
     elif args.rs_conv == "tree_enc_simple_dec":
         struc_tree_encoder = StrucTreeEncoder(latent=latent_size,
-                                            out_=latent_size)
+                                            out_=latent_size,
+                                            gru_update=gru_update
+                                            )
         struc_tree_decoder = SimpleDecoder(in_=latent_size,
-                                        latent=latent_size)
+                                        latent=latent_size,
+                                        gru_update=gru_update
+                                        )
     
     else:
         print(args.rs_conv)
@@ -414,7 +448,8 @@ def build_full_model(args, sweep_config=None): # TODO: merge nets
             'optimizer': args.opt,
             'learning_rate': args.rs_lr,
             'latent_size': args.rs_latent,
-            'opt_epsilon': args.opt_eps
+            'opt_epsilon': args.opt_eps,
+            'gru_update': args.gru_update # Not used
         }
 
     if args.rs_conv == 'test_simple_decoder': # (gt)
